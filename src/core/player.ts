@@ -1,6 +1,6 @@
 import { createCatalog, type Catalog } from './catalog.js';
 import { createClock } from './clock.js';
-import { contains, isKey } from './keys.js';
+import { contains, isKey, sortKeys } from './keys.js';
 import { MEMBER, type GroupLink, type Member } from './member.js';
 import type { PlayerOptions, PlayerSnapshot, TimePlayer } from './player-types.js';
 import {
@@ -202,7 +202,7 @@ export const createTimePlayer = (options: PlayerOptions = {}): TimePlayer => {
             });
         },
         select: (key, mode = 'replace') => changeSelection(applySelect(state.selection, key, mode, multiple)),
-        setSelection: keys => changeSelection(keys.filter(key => isKey(key) && state.catalog.has(key)).slice(0, multiple ? undefined : 1)),
+        setSelection: keys => changeSelection(sortKeys(keys.filter(key => isKey(key) && state.catalog.has(key))).slice(0, multiple ? undefined : 1)),
         clearSelection: () => changeSelection([]),
         open: key => set({ view: validView(state.catalog, viewInside(key)) }),
         back: () => set({ view: viewAbove(state.view) }),

@@ -88,6 +88,6 @@ export const initialSelection = (catalog: Catalog, initial: 'latest' | 'none' | 
         const latest = catalog.latest('month');
         return latest ? [latest] : [];
     }
-    if (Array.isArray(initial)) return initial.filter(key => isKey(key) && catalog.has(key));
+    if (Array.isArray(initial)) return sortKeys(initial.filter(key => isKey(key) && catalog.has(key)));
     return [];
 };

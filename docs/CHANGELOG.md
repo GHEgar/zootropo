@@ -5,6 +5,13 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y 
 
 ## [No publicado]
 
+## [0.2.1] - 2026-10-13
+
+### Corregido
+
+- `initial` y `setSelection` ordenan las llaves como `select()`: antes la secuencia seguía el orden
+  en que llegaban.
+
 ## [0.2.0] - 2026-10-13
 
 ### Agregado

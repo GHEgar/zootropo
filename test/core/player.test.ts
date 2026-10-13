@@ -129,4 +129,12 @@ describe('createTimePlayer', () => {
         player.open('2024-02');
         expect(player.getSnapshot().view.level).toBe('months');
     });
+
+    it('sorts the initial and the programmatic selection', () => {
+        const player = createTimePlayer({ catalog: '2020-01-01,2021-01-01,2022-01-01', initial: ['2022', '2020'], mode: 'year' });
+        expect(player.getSnapshot().selection).toEqual(['2020', '2022']);
+        expect(player.getSnapshot().sequence.keys).toEqual(['2020', '2022']);
+        player.setSelection(['2021', '2020']);
+        expect(player.getSnapshot().selection).toEqual(['2020', '2021']);
+    });
 });
