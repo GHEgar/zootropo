@@ -1,14 +1,18 @@
 import type { Catalog } from './catalog.js';
 import { contains, granularityOf, isKey, parentKey, parseKey, sortKeys, toKey } from './keys.js';
-import type { Item, Level, SelectMode, View } from './types.js';
+import type { Item, Level, Multiple, SelectMode, View } from './types.js';
 
 export const sameGroup = (a: string, b: string): boolean =>
     granularityOf(a) === granularityOf(b) && parentKey(a) === parentKey(b);
 
-export const applySelect = (current: readonly string[], key: string, mode: SelectMode, multiple: boolean): string[] => {
+export const applySelect = (current: readonly string[], key: string, mode: SelectMode, multiple: Multiple): string[] => {
     if (mode === 'replace') return [key];
     const selected = current.includes(key);
     if (!multiple) return selected && current.length === 1 ? [] : [key];
+    if (multiple === 'mixed') {
+        if (selected) return current.filter(item => item !== key);
+        return sortKeys([...current.filter(item => !contains(item, key) && !contains(key, item)), key]);
+    }
     const first = current[0];
     if (first === undefined || !sameGroup(first, key)) return [key];
     return selected ? current.filter(item => item !== key) : sortKeys([...current, key]);

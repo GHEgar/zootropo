@@ -1,7 +1,7 @@
 import type { Catalog, CatalogInput } from './catalog.js';
 import type { MEMBER, Member } from './member.js';
 import type {
-    Direction, Granularity, Item, Kind, PlayerEvent, RequestedMode, SelectMode, Sequence, View,
+    Direction, Granularity, Item, Kind, Multiple, PlayerEvent, RequestedMode, SelectMode, Sequence, View,
 } from './types.js';
 
 export interface PlayerOptions {
@@ -9,7 +9,7 @@ export interface PlayerOptions {
     kind?: Kind;
     column?: string;
     baseCql?: string | null;
-    multiple?: boolean;
+    multiple?: Multiple;
     mode?: RequestedMode;
     granularity?: Granularity;
     intervalMs?: number;

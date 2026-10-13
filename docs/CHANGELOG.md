@@ -5,6 +5,13 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y 
 
 ## [No publicado]
 
+## [0.3.0] - 2026-10-13
+
+### Agregado
+
+- `multiple: 'mixed'`: la selección mezcla niveles y padres (un año, unos meses de otro año, unos
+  días). Al marcar una llave se quitan sus ancestros y descendientes, así el filtro no repite periodos.
+
 ## [0.2.1] - 2026-10-13
 
 ### Corregido

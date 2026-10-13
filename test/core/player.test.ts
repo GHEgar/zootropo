@@ -137,4 +137,19 @@ describe('createTimePlayer', () => {
         player.setSelection(['2021', '2020']);
         expect(player.getSnapshot().selection).toEqual(['2020', '2021']);
     });
+
+    it('mixes levels and parents when multiple is mixed', () => {
+        const player = createTimePlayer({ catalog: '2023-01-01/2024-12-01/P1M', kind: 'cql', column: 'f', multiple: 'mixed' });
+        player.select('2023', 'toggle');
+        player.select('2024-03', 'toggle');
+        player.select('2024-07', 'toggle');
+        expect(player.getSnapshot().selection).toEqual(['2023', '2024-03', '2024-07']);
+        player.select('2024', 'toggle');
+        expect(player.getSnapshot().selection).toEqual(['2023', '2024']);
+        expect(player.getSnapshot().cql).toBe("f >= '2023-01-01' AND f < '2025-01-01'");
+        player.select('2023-02', 'toggle');
+        expect(player.getSnapshot().selection).toEqual(['2023-02', '2024']);
+        player.select('2024', 'toggle');
+        expect(player.getSnapshot().selection).toEqual(['2023-02']);
+    });
 });

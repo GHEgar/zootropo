@@ -10,6 +10,8 @@ export type Kind = 'time' | 'cql';
 
 export type SelectMode = 'replace' | 'toggle';
 
+export type Multiple = boolean | 'mixed';
+
 export type Level = 'years' | 'months' | 'days' | 'hours';
 
 export interface TimeRange {

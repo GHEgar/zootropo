@@ -56,7 +56,8 @@ Dates are calendar strings; the model never uses `Date`, so there are no time zo
 Four levels: years, months of a year, days of a month and hours of a day. The hour level only appears
 when the catalog instants carry a time. `items` holds what the current `view` shows,
 only what exists in the catalog. `select(key, 'toggle')` adds or removes keys of the same level and
-parent; a key from another level or parent replaces the selection. `multiple: false` keeps one key.
+parent; a key from another level or parent replaces the selection. `multiple: false` keeps one key;
+`multiple: 'mixed'` lets any keys live together and drops the ancestors and descendants of a key you add.
 `open(key)` goes one level down, `back()` one level up.
 
 Keys are `YYYY`, `YYYY-MM`, `YYYY-MM-DD` and `YYYY-MM-DDTHH`.
