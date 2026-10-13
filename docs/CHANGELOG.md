@@ -1,0 +1,28 @@
+# Changelog
+
+Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y versionado con
+[SemVer](https://semver.org/lang/es/).
+
+## [No publicado]
+
+## [0.1.0] - 2026-10-13
+
+### Agregado
+
+- Lectura de dimensiones ISO 8601: listas, intervalos `inicio/fin/periodo` expandidos a instantes,
+  intervalos continuos como rangos, zonas horarias normalizadas a UTC; aritmética de calendario con
+  enteros, sin `Date`.
+- `createCatalog`: árbol año → mes → día, rangos continuos respondidos sin expandir,
+  `isAvailable(iso)` y llaves por granularidad.
+- Selección en tres niveles con varias llaves del mismo nivel y padre, navegación con `open` y `back`.
+- Valor `TIME` con los instantes del catálogo compactados en rangos, y valor CQL con rangos
+  semiabiertos fundidos y `baseCql`.
+- Secuencias `year`, `month`, `day`, `timeline` y `auto`.
+- `createTimePlayer`: play, pausa, detener, pasos, intervalo acotado, dirección, bucle, espera de carga
+  con `loading()`/`ready()` y timeout, eventos por `onEvent`.
+- `createPlayerGroup`: reloj compartido sobre la unión de las secuencias, miembros sin la fecha
+  marcados como `stale`, espera a todos los miembros.
+- `createFormatter` con `Intl`.
+- `zootropo/react`: `useTimePlayer` y `usePlayerGroup` con prop getters y ARIA.
+- `zootropo/ol`: `bindWmsTime` y lectura de dimensiones desde `GetCapabilities`.
+- Demo en Vite con NASA GIBS y un GeoServer público.
