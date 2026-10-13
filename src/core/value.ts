@@ -1,6 +1,6 @@
 import type { Catalog } from './catalog.js';
 import { parseInstant } from './iso.js';
-import { firstDay, isoDate, lastDay, sortKeys } from './keys.js';
+import { DAY_MS, endAt, isoDate, sortKeys, startAt } from './keys.js';
 
 export interface TimeValueOptions {
     compact?: boolean;
@@ -58,18 +58,25 @@ export const and = (parts: readonly (string | null | undefined)[]): string | nul
     return present.map(part => `(${part})`).join(' AND ');
 };
 
+const literal = (at: number): string => {
+    const day = Math.floor(at / DAY_MS);
+    const rest = at - day * DAY_MS;
+    if (rest === 0) return isoDate(day);
+    return `${isoDate(day)}T${String(Math.floor(rest / 3_600_000)).padStart(2, '0')}:00:00Z`;
+};
+
 export const cqlValue = (column: string, keys: readonly string[]): string | null => {
     const spans: [number, number][] = [];
     for (const key of sortKeys(keys)) {
-        const from = firstDay(key);
-        const to = lastDay(key) + 1;
+        const from = startAt(key);
+        const to = endAt(key);
         const last = spans[spans.length - 1];
         if (last && from <= last[1]) last[1] = Math.max(last[1], to);
         else spans.push([from, to]);
     }
     if (spans.length === 0) return null;
     const field = quoteIdentifier(column);
-    const parts = spans.map(([from, to]) => `${field} >= '${isoDate(from)}' AND ${field} < '${isoDate(to)}'`);
+    const parts = spans.map(([from, to]) => `${field} >= '${literal(from)}' AND ${field} < '${literal(to)}'`);
     if (parts.length === 1) return parts[0] as string;
     return parts.map(part => `(${part})`).join(' OR ');
 };

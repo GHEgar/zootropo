@@ -1,4 +1,4 @@
-import { firstDay, lastDay, parseKey, shiftKey, sortKeys } from './keys.js';
+import { endAt, parseKey, shiftKey, sortKeys, startAt } from './keys.js';
 import type { Granularity } from './types.js';
 
 export interface FormatOptions {
@@ -11,12 +11,11 @@ export interface FormatOptions {
 export interface Formatter {
     key(key: string, style?: 'long' | 'short'): string;
     month(month: number, style?: 'long' | 'short'): string;
+    hour(hour: number): string;
     keys(keys: readonly string[]): string;
 }
 
-const DAY_MS = 86_400_000;
-
-const toDate = (days: number): Date => new Date(days * DAY_MS);
+const toDate = (at: number): Date => new Date(at);
 
 const defaultCount = (count: number, granularity: Granularity): string => `${count} ${granularity}${count === 1 ? '' : 's'}`;
 
@@ -39,21 +38,28 @@ export const createFormatter = (options: FormatOptions = {}): Formatter => {
         day: (style: 'long' | 'short') => new Intl.DateTimeFormat(locale, {
             year: 'numeric', month: style === 'long' ? monthStyle : 'short', day: 'numeric', timeZone: 'UTC',
         }),
+        hour: (style: 'long' | 'short') => new Intl.DateTimeFormat(locale, {
+            year: 'numeric', month: style === 'long' ? monthStyle : 'short', day: 'numeric',
+            hour: '2-digit', minute: '2-digit', timeZone: 'UTC',
+        }),
+        hourOnly: new Intl.DateTimeFormat(locale, { hour: '2-digit', minute: '2-digit', timeZone: 'UTC' }),
     };
     const list = new Intl.ListFormat(locale, { style: 'long', type: 'conjunction' });
 
     const formatterFor = (granularity: Granularity, style: 'long' | 'short'): Intl.DateTimeFormat => {
         if (granularity === 'year') return formats.year;
         if (granularity === 'month') return formats.month(style);
-        return formats.day(style);
+        if (granularity === 'day') return formats.day(style);
+        return formats.hour(style);
     };
 
     const key = (value: string, style: 'long' | 'short' = 'long'): string =>
-        formatterFor(parseKey(value).granularity, style).format(toDate(firstDay(value)));
+        formatterFor(parseKey(value).granularity, style).format(toDate(startAt(value)));
 
     return {
         key,
-        month: (month, style = 'long') => formats.monthOnly(style).format(toDate(firstDay(`2000-${String(month).padStart(2, '0')}`))),
+        month: (month, style = 'long') => formats.monthOnly(style).format(toDate(startAt(`2000-${String(month).padStart(2, '0')}`))),
+        hour: hour => formats.hourOnly.format(toDate(hour * 3_600_000)),
         keys(values) {
             const sorted = sortKeys(values);
             const first = sorted[0];
@@ -63,7 +69,7 @@ export const createFormatter = (options: FormatOptions = {}): Formatter => {
             const granularities = new Set(sorted.map(item => parseKey(item).granularity));
             const granularity = parseKey(first).granularity;
             if (granularities.size === 1 && contiguous(sorted)) {
-                return formatterFor(granularity, 'long').formatRange(toDate(firstDay(first)), toDate(lastDay(last)));
+                return formatterFor(granularity, 'long').formatRange(toDate(startAt(first)), toDate(endAt(last) - 1));
             }
             if (sorted.length <= maxItems) return list.format(sorted.map(item => key(item, 'short')));
             return count(sorted.length, granularity);

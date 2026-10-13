@@ -48,7 +48,7 @@ export const useTimePlayer = (player: TimePlayer, options: UseTimePlayerOptions 
 
     return useMemo(() => {
         const choose = (item: Item): void => {
-            const opens = openOnSelect.includes(item.level) && item.level !== 'day';
+            const opens = openOnSelect.includes(item.level) && item.level !== 'hour';
             if (!(opens && item.selected)) player.select(item.key, 'toggle');
             if (opens) player.open(item.key);
         };
@@ -60,12 +60,12 @@ export const useTimePlayer = (player: TimePlayer, options: UseTimePlayerOptions 
                 'data-level': item.level,
                 tabIndex: 0,
                 onClick: () => choose(item),
-                onDoubleClick: () => { if (item.level !== 'day') player.open(item.key); },
+                onDoubleClick: () => { if (item.level !== 'hour') player.open(item.key); },
                 onKeyDown: event => {
                     if (event.key === 'Enter' || event.key === ' ') {
                         event.preventDefault();
                         choose(item);
-                    } else if (event.key === 'ArrowRight' && item.level !== 'day') {
+                    } else if (event.key === 'ArrowRight' && item.level !== 'hour') {
                         event.preventDefault();
                         player.open(item.key);
                     } else if (event.key === 'ArrowLeft' || event.key === 'Backspace') {

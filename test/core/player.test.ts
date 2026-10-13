@@ -19,7 +19,7 @@ describe('createTimePlayer', () => {
         const player = createTimePlayer({ catalog: MONTHLY, kind: 'cql', column: 'fecha' });
         player.select('2024');
         player.open('2024');
-        expect(player.getSnapshot().view).toEqual({ level: 'months', year: 2024, month: null });
+        expect(player.getSnapshot().view).toEqual({ level: 'months', year: 2024, month: null, day: null });
         player.select('2024-02', 'toggle');
         player.select('2024-03', 'toggle');
         expect(player.getSnapshot().selection).toEqual(['2024-02', '2024-03']);
@@ -112,5 +112,21 @@ describe('createTimePlayer', () => {
 
     it('requires a column for cql players', () => {
         expect(() => createTimePlayer({ kind: 'cql' })).toThrow();
+    });
+
+    it('opens days into hours when the catalog has times', () => {
+        const player = createTimePlayer({ catalog: '2024-03-01T00:00:00Z/2024-03-01T18:00:00Z/PT6H', kind: 'cql', column: 't' });
+        player.open('2024');
+        player.open('2024-03');
+        player.open('2024-03-01');
+        expect(player.getSnapshot().view).toEqual({ level: 'hours', year: 2024, month: 3, day: 1 });
+        expect(player.getSnapshot().items.map(item => item.hour)).toEqual([0, 6, 12, 18]);
+        player.select('2024-03-01T06');
+        player.play();
+        vi.advanceTimersByTime(1000);
+        expect(player.getSnapshot()).toMatchObject({ step: '2024-03-01T12', cql: "t >= '2024-03-01T12:00:00Z' AND t < '2024-03-01T13:00:00Z'" });
+        player.back();
+        player.open('2024-02');
+        expect(player.getSnapshot().view.level).toBe('months');
     });
 });

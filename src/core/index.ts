@@ -7,8 +7,8 @@ export type { Catalog, CatalogInput } from './catalog.js';
 export { addDuration, formatInstant, parseDuration, parseInstant, parseTimeDimension } from './iso.js';
 export type { Duration, Instant, ParseOptions, Shape } from './iso.js';
 export {
-    compareKeys, contains, firstDay, granularityOf, isKey, isoDate, keyOfDay, lastDay, parentKey, parseKey, shiftKey,
-    sortKeys, toKey,
+    compareKeys, contains, endAt, firstDay, granularityOf, isKey, isoDate, keyOfAt, keyOfDay, lastDay, parentKey, parseKey,
+    shiftKey, sortKeys, startAt, toKey,
 } from './keys.js';
 export type { KeyParts } from './keys.js';
 export { applySelect, buildItems, sameGroup } from './selection.js';

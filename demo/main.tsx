@@ -13,8 +13,6 @@ import { AQUA, GEOSERVER, GIBS, LABELS, STORMS_COLUMN, STORMS_CQL, STORMS_TIME, 
 
 type StormKind = 'time' | 'cql';
 
-const ALL_STORMS = { TIME: '1990-01-01/2009-01-01' };
-
 const loadInto = (player: TimePlayer, values: string | undefined): void => {
     if (!values) return;
     player.setCatalog(values);
@@ -87,7 +85,7 @@ function App() {
                     url={GEOSERVER}
                     layer={stormKind === 'time' ? STORMS_TIME : STORMS_CQL}
                     player={storms}
-                    params={stormKind === 'cql' ? ALL_STORMS : undefined}
+                    cqlTime={stormKind === 'cql' ? 'catalog' : undefined}
                     title={`Tormentas · ${stormKind === 'time' ? 'TIME' : 'CQL'}`}
                 />
             </div>

@@ -6,6 +6,7 @@ import type { TimePlayer } from '../core/index.js';
 export interface WmsTimeOptions {
     param?: string;
     settleMs?: number;
+    cqlTime?: 'catalog' | string | null;
 }
 
 export interface WmsTimeBinding {
@@ -20,9 +21,10 @@ const ENDS = ['tileloadend', 'tileloaderror', 'imageloadend', 'imageloaderror'];
 export const bindWmsTime = (player: TimePlayer, source: ImageWMS | TileWMS, options: WmsTimeOptions = {}): WmsTimeBinding => {
     const param = options.param ?? (player.kind === 'time' ? 'TIME' : 'CQL_FILTER');
     const settleMs = options.settleMs ?? 150;
+    const cqlTime = player.kind === 'cql' ? options.cqlTime ?? null : null;
     let pending = 0;
     let waiting = false;
-    let last: string | null | undefined;
+    let last: string | undefined;
     let settle: ReturnType<typeof setTimeout> | null = null;
 
     const clearSettle = (): void => {
@@ -47,13 +49,23 @@ export const bindWmsTime = (player: TimePlayer, source: ImageWMS | TileWMS, opti
         })),
     ];
 
+    const wideTime = (): string | undefined => {
+        if (cqlTime !== 'catalog') return cqlTime ?? undefined;
+        const extent = player.getSnapshot().catalog.extent();
+        return extent ? `${extent.start}/${extent.end}` : undefined;
+    };
+
     const apply = (force = false): void => {
         const value = player.getSnapshot().value;
-        if (!force && value === last) return;
-        last = value;
+        const time = cqlTime === null ? undefined : wideTime();
+        const key = `${value ?? ''}|${time ?? ''}`;
+        if (!force && key === last) return;
+        last = key;
         waiting = true;
         player.loading();
-        source.updateParams({ [param]: value ?? undefined });
+        const params: Record<string, string | undefined> = { [param]: value ?? undefined };
+        if (cqlTime !== null) params.TIME = time;
+        source.updateParams(params);
         clearSettle();
         settle = setTimeout(() => {
             settle = null;

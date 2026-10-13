@@ -1,15 +1,16 @@
-import { toKey, useTimePlayer, type Item, type RequestedMode, type TimePlayer } from 'zootropo/react';
+import { toKey, useTimePlayer, type Granularity, type Item, type RequestedMode, type TimePlayer } from 'zootropo/react';
 import { LABELS, formatter } from './sources';
 import { Transport } from './Transport';
 
-const MODES: RequestedMode[] = ['auto', 'year', 'month', 'day', 'timeline'];
+const MODES: RequestedMode[] = ['auto', 'year', 'month', 'day', 'hour', 'timeline'];
 const MODE_LABELS: Record<RequestedMode, string> = {
-    auto: 'Auto', year: 'Años', month: 'Meses', day: 'Días', timeline: 'Línea de tiempo',
+    auto: 'Auto', year: 'Años', month: 'Meses', day: 'Días', hour: 'Horas', timeline: 'Línea de tiempo',
 };
 
 const itemLabel = (item: Item): string => {
     if (item.level === 'year') return String(item.year);
     if (item.level === 'month' && item.month !== null) return formatter.month(item.month, 'short');
+    if (item.level === 'hour' && item.hour !== null) return formatter.hour(item.hour);
     return String(item.day);
 };
 
@@ -23,7 +24,7 @@ export function Selector({ player, title }: Props) {
     const { view } = t;
     const where = view.level === 'years' || view.year === null
         ? 'Años'
-        : view.level === 'months' ? String(view.year) : formatter.key(toKey(view.year, view.month));
+        : view.level === 'months' ? String(view.year) : formatter.key(toKey(view.year, view.month, view.level === 'hours' ? view.day : null));
 
     return (
         <section className="selector" data-stale={t.stale || undefined}>
@@ -53,10 +54,11 @@ export function Selector({ player, title }: Props) {
                 {t.sequence.mode === 'timeline' && (
                     <label>
                         Paso{' '}
-                        <select value={t.granularity} onChange={event => player.setGranularity(event.target.value as 'year' | 'month' | 'day')}>
+                        <select value={t.granularity} onChange={event => player.setGranularity(event.target.value as Granularity)}>
                             <option value="year">año</option>
                             <option value="month">mes</option>
                             <option value="day">día</option>
+                            <option value="hour">hora</option>
                         </select>
                     </label>
                 )}

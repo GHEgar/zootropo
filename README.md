@@ -53,12 +53,13 @@ Dates are calendar strings; the model never uses `Date`, so there are no time zo
 
 ### Selection and navigation
 
-Three levels: years, months of a year, days of a month. `items` holds what the current `view` shows,
+Four levels: years, months of a year, days of a month and hours of a day. The hour level only appears
+when the catalog instants carry a time. `items` holds what the current `view` shows,
 only what exists in the catalog. `select(key, 'toggle')` adds or removes keys of the same level and
 parent; a key from another level or parent replaces the selection. `multiple: false` keeps one key.
 `open(key)` goes one level down, `back()` one level up.
 
-Keys are `YYYY`, `YYYY-MM` and `YYYY-MM-DD`.
+Keys are `YYYY`, `YYYY-MM`, `YYYY-MM-DD` and `YYYY-MM-DDTHH`.
 
 ### Value
 
@@ -74,6 +75,7 @@ Keys are `YYYY`, `YYYY-MM` and `YYYY-MM-DD`.
 | `year` | Every year, or the selected years when there are two or more |
 | `month` | The months of the selected year, or the selected months when there are two or more |
 | `day` | The days of the selected month, or the selected days when there are two or more |
+| `hour` | The hours of the selected day, or the selected hours when there are two or more |
 | `timeline` | The whole catalog at `granularity` (`month` by default), across years |
 | `auto` | Inferred from the selection, then the view; the first mode with at least two steps |
 
@@ -149,13 +151,14 @@ const binding = bindWmsTime(player, tileWmsSource);
 ```
 
 `bindWmsTime` writes `TIME` (or `CQL_FILTER` for `cql` players) with `updateParams`, counts tile and
-image loads and calls `loading()`/`ready()`. `fetchDimensions` reads every layer's dimension from a
+image loads and calls `loading()`/`ready()`. For a `cql` player on a layer that also has a time
+dimension, pass `cqlTime: 'catalog'` (the catalog extent) or a fixed value to send a wide `TIME` too. `fetchDimensions` reads every layer's dimension from a
 WMS 1.3.0 `GetCapabilities`, by full and local name.
 
 ## Notes
 
 - A GeoServer layer with a `TIME` dimension applies its default time when the request has no `TIME`,
-  even with `CQL_FILTER`. Send a wide `TIME` on the source when you filter such a layer by CQL.
+  even with `CQL_FILTER`. Use `cqlTime` when you filter such a layer by CQL.
 - With several instants in `TIME`, what the server draws depends on the layer. Some services, like
   NASA GIBS, accept a single instant: use `multiple: false`.
 
@@ -163,9 +166,10 @@ WMS 1.3.0 `GetCapabilities`, by full and local name.
 
 ```bash
 npm run demo
+npm run e2e
 ```
 
-MODIS NDVI from NASA GIBS on two maps with a shared clock, and Atlantic storms from a public
+Live at <https://ghegar.github.io/zootropo/>. MODIS NDVI from NASA GIBS on two maps with a shared clock, and Atlantic storms from a public
 GeoServer by `TIME` or by CQL.
 
 ## License

@@ -5,6 +5,25 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y 
 
 ## [No publicado]
 
+## [0.2.0] - 2026-10-13
+
+### Agregado
+
+- Nivel de horas: llaves `YYYY-MM-DDTHH`, vista `hours`, modo de secuencia `hour` y `timeline` por
+  hora. Solo aparece cuando los instantes del catálogo traen hora.
+- `catalog.hours(year, month, day)` y `catalog.extent()`.
+- CQL por hora con fecha y hora (`'1990-07-22T06:00:00Z'`).
+- `bindWmsTime(player, source, { cqlTime })`: con `'catalog'` o un valor fijo manda un `TIME` amplio
+  junto al `CQL_FILTER`, para capas de GeoServer con dimensión de tiempo.
+- `formatter.hour(hour)`.
+- Pruebas e2e con Playwright contra el demo, con servidores simulados.
+- Workflow que construye el demo y lo publica en GitHub Pages.
+
+### Cambiado
+
+- Los periodos se comparan por milisegundo (`startAt`/`endAt`) en lugar de por día.
+- La vista lleva `day` y los ítems `hour`.
+
 ## [0.1.0] - 2026-10-13
 
 ### Agregado

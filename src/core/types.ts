@@ -1,6 +1,6 @@
-export type Granularity = 'year' | 'month' | 'day';
+export type Granularity = 'year' | 'month' | 'day' | 'hour';
 
-export type Mode = 'year' | 'month' | 'day' | 'timeline';
+export type Mode = 'year' | 'month' | 'day' | 'hour' | 'timeline';
 
 export type RequestedMode = Mode | 'auto';
 
@@ -10,7 +10,7 @@ export type Kind = 'time' | 'cql';
 
 export type SelectMode = 'replace' | 'toggle';
 
-export type Level = 'years' | 'months' | 'days';
+export type Level = 'years' | 'months' | 'days' | 'hours';
 
 export interface TimeRange {
     start: string;
@@ -26,6 +26,7 @@ export interface View {
     level: Level;
     year: number | null;
     month: number | null;
+    day: number | null;
 }
 
 export interface Sequence {
@@ -40,6 +41,7 @@ export interface Item {
     year: number;
     month: number | null;
     day: number | null;
+    hour: number | null;
     selected: boolean;
     partial: boolean;
     current: boolean;

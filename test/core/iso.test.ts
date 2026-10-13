@@ -79,3 +79,16 @@ describe('parseTimeDimension', () => {
         expect(parseTimeDimension('2000-01-01/2000-12-31/P1D', { maxInstants: 100 }).ranges).toHaveLength(1);
     });
 });
+
+describe('createFormatter', () => {
+    it('formats keys, ranges and hours with Intl', async () => {
+        const { createFormatter } = await import('../../src/core/index.js');
+        const format = createFormatter({ locale: 'en-US' });
+        expect(format.key('2024-03')).toBe('March 2024');
+        expect(format.key('2024-03-01T06')).toContain('06:00');
+        expect(format.hour(18)).toMatch(/18|6/);
+        expect(format.keys(['2024-01', '2024-02', '2024-03']).replace(/\s/g, ' ')).toBe('January – March 2024');
+        expect(format.keys(['2024-01', '2024-05'])).toBe('Jan 2024 and May 2024');
+        expect(format.keys(['2024-01', '2024-03', '2024-05', '2024-07'])).toBe('4 months');
+    });
+});

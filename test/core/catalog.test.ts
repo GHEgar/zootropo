@@ -7,7 +7,7 @@ const STORMS = [
     '1990-07-22T06:00:00.000Z', '1990-07-22T12:00:00.000Z', '1990-07-23T00:00:00.000Z',
     '1990-08-01T00:00:00.000Z', '1991-01-10T00:00:00.000Z',
 ];
-const YEARS: View = { level: 'years', year: null, month: null };
+const YEARS: View = { level: 'years', year: null, month: null, day: null };
 
 describe('createCatalog', () => {
     it('builds the year, month and day tree from a dimension string', () => {
@@ -115,5 +115,33 @@ describe('buildSequence', () => {
         const single = createCatalog('2012-01-01,2016-01-01');
         expect(buildSequence({ ...base, catalog: single, selection: ['2016-01'], mode: 'auto' }).mode).toBe('year');
         expect(buildSequence({ ...base, catalog: single, selection: [], mode: 'month' }).keys).toEqual([]);
+    });
+});
+
+describe('hours', () => {
+    const catalog = createCatalog(STORMS);
+
+    it('adds an hour level only for instants with time', () => {
+        expect(catalog.hours(1990, 7, 22)).toEqual([6, 12]);
+        expect(createCatalog('2024-01-01,2024-02-01').hours(2024, 1, 1)).toEqual([]);
+        expect(catalog.slice('1990-07-22T12')).toEqual([1, 2]);
+        expect(catalog.keys('hour').keys).toEqual(['1990-07-22T06', '1990-07-22T12', '1990-07-23T00', '1990-08-01T00', '1991-01-10T00']);
+        expect(catalog.extent()).toEqual({ start: '1990-07-22T06:00:00.000Z', end: '1991-01-10T00:00:00.000Z' });
+    });
+
+    it('answers hours inside continuous ranges', () => {
+        const continuous = createCatalog('2020-01-01T10:30:00Z/2020-01-02T02:00:00Z');
+        expect(continuous.hours(2020, 1, 1)).toEqual([10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23]);
+        expect(continuous.hours(2020, 1, 2)).toEqual([0, 1, 2]);
+        expect(continuous.rangesIn('2020-01-01T12')).toEqual([{ start: '2020-01-01T12:00:00Z', end: '2020-01-01T12:59:59Z' }]);
+    });
+
+    it('builds hour sequences, values and cql', () => {
+        expect(buildSequence({ catalog, view: YEARS, granularity: 'month', selection: ['1990-07-22T06'], mode: 'auto' })).toMatchObject({
+            mode: 'hour', keys: ['1990-07-22T06', '1990-07-22T12'],
+        });
+        expect(timeValue(catalog, ['1990-07-22T12'])).toBe('1990-07-22T12:00:00.000Z');
+        expect(cqlValue('t', ['1990-07-22T06', '1990-07-22T07'])).toBe("t >= '1990-07-22T06:00:00Z' AND t < '1990-07-22T08:00:00Z'");
+        expect(cqlValue('t', ['1990-07-22T23', '1990-07-23'])).toBe("t >= '1990-07-22T23:00:00Z' AND t < '1990-07-24'");
     });
 });

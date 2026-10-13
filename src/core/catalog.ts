@@ -1,5 +1,7 @@
 import { formatInstant, parseInstant, parseTimeDimension, type Instant, type ParseOptions } from './iso.js';
-import { civil, firstDay, isKey, keyOfDay, lastDay, shiftKey, sortKeys, toKey } from './keys.js';
+import {
+    DAY_MS, HOUR_MS, civil, dayNumber, endAt, firstDay, isKey, keyOfAt, lastDay, shiftKey, sortKeys, startAt, toKey,
+} from './keys.js';
 import type { Granularity, TimeDimension, TimeRange } from './types.js';
 
 export interface Catalog {
@@ -9,6 +11,7 @@ export interface Catalog {
     years(): number[];
     months(year: number): number[];
     days(year: number, month: number): number[];
+    hours(year: number, month: number, day: number): number[];
     has(key: string): boolean;
     isAvailable(iso: string): boolean;
     keys(granularity: Granularity, limit?: number): { keys: string[]; truncated: boolean };
@@ -16,6 +19,7 @@ export interface Catalog {
     rangesIn(key: string): TimeRange[];
     latest(granularity: Granularity): string | null;
     earliest(granularity: Granularity): string | null;
+    extent(): TimeRange | null;
 }
 
 export type CatalogInput = string | readonly string[] | TimeDimension | Catalog;
@@ -24,8 +28,6 @@ interface Span {
     start: Instant;
     end: Instant;
 }
-
-const DAY_MS = 86_400_000;
 
 export const isCatalog = (value: unknown): value is Catalog =>
     typeof value === 'object' && value !== null && !Array.isArray(value)
@@ -39,12 +41,12 @@ const toDimension = (input: Exclude<CatalogInput, Catalog>, options: ParseOption
 
 const range = (from: number, to: number): number[] => Array.from({ length: Math.max(0, to - from + 1) }, (_, index) => from + index);
 
-const lowerBound = (entries: readonly Instant[], day: number): number => {
+const lowerBound = (entries: readonly Instant[], at: number): number => {
     let low = 0;
     let high = entries.length;
     while (low < high) {
         const middle = (low + high) >> 1;
-        if ((entries[middle] as Instant).day < day) low = middle + 1;
+        if ((entries[middle] as Instant).at < at) low = middle + 1;
         else high = middle;
     }
     return low;
@@ -68,6 +70,7 @@ export const createCatalog = (input: CatalogInput, options: ParseOptions = {}): 
     spans.sort((a, b) => a.start.at - b.start.at);
 
     const tree = new Map<number, Map<number, Set<number>>>();
+    const hoursByDay = new Map<number, Set<number>>();
     for (const entry of entries) {
         const [year, month, day] = civil(entry.day);
         const months = tree.get(year) ?? new Map<number, Set<number>>();
@@ -75,25 +78,40 @@ export const createCatalog = (input: CatalogInput, options: ParseOptions = {}): 
         const days = months.get(month) ?? new Set<number>();
         months.set(month, days);
         days.add(day);
+        if (!entry.shape.time) continue;
+        const hours = hoursByDay.get(entry.day) ?? new Set<number>();
+        hoursByDay.set(entry.day, hours);
+        hours.add(Math.floor(entry.ms / HOUR_MS));
     }
 
     const overlapping = (from: number, to: number): Span[] => spans.filter(span => span.start.day <= to && span.end.day >= from);
+    const overlappingAt = (from: number, to: number): Span[] => spans.filter(span => span.start.at < to && span.end.at >= from);
     const sorted = (values: Iterable<number>): number[] => [...new Set(values)].sort((a, b) => a - b);
 
-    const slice = (key: string): [number, number] => [lowerBound(entries, firstDay(key)), lowerBound(entries, lastDay(key) + 1)];
+    const slice = (key: string): [number, number] => [lowerBound(entries, startAt(key)), lowerBound(entries, endAt(key))];
 
     const has = (key: string): boolean => {
         const [from, to] = slice(key);
-        return to > from || overlapping(firstDay(key), lastDay(key)).length > 0;
+        return to > from || overlappingAt(startAt(key), endAt(key)).length > 0;
+    };
+
+    const atOf = (at: number, shape: Instant['shape']): string => {
+        const day = Math.floor(at / DAY_MS);
+        return formatInstant(day, shape.time ? at - day * DAY_MS : 0, shape);
+    };
+
+    const bound = (pick: 'first' | 'last'): Instant | null => {
+        const candidates: Instant[] = [];
+        const entry = pick === 'first' ? entries[0] : entries[entries.length - 1];
+        if (entry) candidates.push(entry);
+        for (const span of spans) candidates.push(pick === 'first' ? span.start : span.end);
+        if (candidates.length === 0) return null;
+        return candidates.reduce((best, item) => ((pick === 'first' ? item.at < best.at : item.at > best.at) ? item : best));
     };
 
     const edge = (granularity: Granularity, pick: 'first' | 'last'): string | null => {
-        const candidates: number[] = [];
-        const entry = pick === 'first' ? entries[0] : entries[entries.length - 1];
-        if (entry) candidates.push(entry.day);
-        for (const span of spans) candidates.push(pick === 'first' ? span.start.day : span.end.day);
-        if (candidates.length === 0) return null;
-        return keyOfDay(pick === 'first' ? Math.min(...candidates) : Math.max(...candidates), granularity);
+        const instant = bound(pick);
+        return instant ? keyOfAt(instant.at, granularity) : null;
     };
 
     return {
@@ -124,17 +142,30 @@ export const createCatalog = (input: CatalogInput, options: ParseOptions = {}): 
             }
             return sorted(days);
         },
+        hours(year, month, day) {
+            const number = dayNumber(year, month, day);
+            const hours: number[] = [...(hoursByDay.get(number) ?? [])];
+            for (const span of overlapping(number, number)) {
+                if (!span.start.shape.time) continue;
+                const from = span.start.day === number ? Math.floor(span.start.ms / HOUR_MS) : 0;
+                const to = span.end.day === number ? Math.floor(span.end.ms / HOUR_MS) : 23;
+                hours.push(...range(from, to));
+            }
+            return sorted(hours);
+        },
         has,
         isAvailable(iso) {
             if (isKey(iso)) return has(iso);
             const instant = parseInstant(iso);
-            return instant !== null && has(keyOfDay(instant.day, 'day'));
+            return instant !== null && has(keyOfAt(instant.at, 'day'));
         },
         keys(granularity, limit = 10_000) {
-            const keys = new Set(entries.map(entry => keyOfDay(entry.day, granularity)));
+            const timed = granularity !== 'hour';
+            const keys = new Set(entries.filter(entry => timed || entry.shape.time).map(entry => keyOfAt(entry.at, granularity)));
             let truncated = false;
             for (const span of spans) {
-                for (let key = keyOfDay(span.start.day, granularity); firstDay(key) <= span.end.day; key = shiftKey(key, 1)) {
+                if (!timed && !span.start.shape.time) continue;
+                for (let key = keyOfAt(span.start.at, granularity); startAt(key) <= span.end.at; key = shiftKey(key, 1)) {
                     if (keys.size >= limit) {
                         truncated = true;
                         break;
@@ -147,14 +178,19 @@ export const createCatalog = (input: CatalogInput, options: ParseOptions = {}): 
         },
         slice,
         rangesIn(key) {
-            const from = firstDay(key);
-            const to = lastDay(key);
-            return overlapping(from, to).map(span => ({
-                start: span.start.day >= from ? span.start.text : formatInstant(from, 0, span.start.shape),
-                end: span.end.day <= to ? span.end.text : formatInstant(to, span.end.shape.time ? DAY_MS - 1 : 0, span.end.shape),
+            const from = startAt(key);
+            const to = endAt(key);
+            return overlappingAt(from, to).map(span => ({
+                start: span.start.at >= from ? span.start.text : atOf(from, span.start.shape),
+                end: span.end.at < to ? span.end.text : atOf(to - 1, span.end.shape),
             }));
         },
         latest: granularity => edge(granularity, 'last'),
         earliest: granularity => edge(granularity, 'first'),
+        extent() {
+            const first = bound('first');
+            const last = bound('last');
+            return first && last ? { start: first.text, end: last.text } : null;
+        },
     };
 };

@@ -14,17 +14,17 @@ interface Props {
     layer: string;
     player: TimePlayer;
     title: string;
-    params?: Record<string, string> | undefined;
+    cqlTime?: 'catalog' | undefined;
 }
 
-export function MapPanel({ view, url, layer, player, title, params }: Props) {
+export function MapPanel({ view, url, layer, player, title, cqlTime }: Props) {
     const target = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         if (!target.current) return undefined;
         const source = new TileWMS({
             url,
-            params: { LAYERS: layer, FORMAT: 'image/png', TRANSPARENT: true, ...params },
+            params: { LAYERS: layer, FORMAT: 'image/png', TRANSPARENT: true },
             crossOrigin: 'anonymous',
             transition: 0,
         });
@@ -33,12 +33,12 @@ export function MapPanel({ view, url, layer, player, title, params }: Props) {
             layers: [new TileLayer({ source: new OSM() }), new TileLayer({ source, opacity: 0.85 })],
             view,
         });
-        const binding = bindWmsTime(player, source);
+        const binding = bindWmsTime(player, source, cqlTime ? { cqlTime } : {});
         return () => {
             binding.destroy();
             map.setTarget(undefined);
         };
-    }, [view, url, layer, player, params]);
+    }, [view, url, layer, player, cqlTime]);
 
     return (
         <section className="map">

@@ -14,54 +14,60 @@ export const applySelect = (current: readonly string[], key: string, mode: Selec
     return selected ? current.filter(item => item !== key) : sortKeys([...current, key]);
 };
 
-export const YEARS: View = { level: 'years', year: null, month: null };
+export const YEARS: View = { level: 'years', year: null, month: null, day: null };
+
+const months = (year: number): View => ({ level: 'months', year, month: null, day: null });
+const days = (year: number, month: number | null): View => ({ level: 'days', year, month, day: null });
+const hours = (year: number, month: number | null, day: number | null): View => ({ level: 'hours', year, month, day });
 
 export const viewInside = (key: string): View => {
-    const { year, month, granularity } = parseKey(key);
-    if (granularity === 'year') return { level: 'months', year, month: null };
-    return { level: 'days', year, month };
+    const { year, month, day, granularity } = parseKey(key);
+    if (granularity === 'year') return months(year);
+    if (granularity === 'month') return days(year, month);
+    return hours(year, month, day);
 };
 
 export const viewShowing = (key: string): View => {
-    const { year, month, granularity } = parseKey(key);
+    const { year, month, day, granularity } = parseKey(key);
     if (granularity === 'year') return YEARS;
-    if (granularity === 'month') return { level: 'months', year, month: null };
-    return { level: 'days', year, month };
+    if (granularity === 'month') return months(year);
+    if (granularity === 'day') return days(year, month);
+    return hours(year, month, day);
 };
 
 export const viewAbove = (view: View): View => {
-    if (view.level === 'days' && view.year !== null) return { level: 'months', year: view.year, month: null };
+    if (view.year === null) return YEARS;
+    if (view.level === 'hours') return days(view.year, view.month);
+    if (view.level === 'days') return months(view.year);
     return YEARS;
 };
 
-export const sameView = (a: View, b: View): boolean => a.level === b.level && a.year === b.year && a.month === b.month;
-
 export const viewKeys = (catalog: Catalog, view: View): string[] => {
-    if (view.level === 'months' && view.year !== null) {
-        const year = view.year;
-        return catalog.months(year).map(month => toKey(year, month));
+    const { year, month, day } = view;
+    if (year === null) return catalog.years().map(item => toKey(item));
+    if (view.level === 'months') return catalog.months(year).map(item => toKey(year, item));
+    if (view.level === 'days' && month !== null) return catalog.days(year, month).map(item => toKey(year, month, item));
+    if (view.level === 'hours' && month !== null && day !== null) {
+        return catalog.hours(year, month, day).map(item => toKey(year, month, day, item));
     }
-    if (view.level === 'days' && view.year !== null && view.month !== null) {
-        const { year, month } = view;
-        return catalog.days(year, month).map(day => toKey(year, month, day));
-    }
-    return catalog.years().map(year => toKey(year));
+    return catalog.years().map(item => toKey(item));
 };
 
 export const validView = (catalog: Catalog, view: View): View => {
-    if (view.level === 'years' || view.year === null) return YEARS;
-    if (!catalog.has(toKey(view.year))) return YEARS;
-    if (view.level === 'days' && (view.month === null || !catalog.has(toKey(view.year, view.month)))) {
-        return { level: 'months', year: view.year, month: null };
-    }
+    const { year, month, day } = view;
+    if (view.level === 'years' || year === null || !catalog.has(toKey(year))) return YEARS;
+    if (view.level === 'months') return view;
+    if (month === null || !catalog.has(toKey(year, month))) return months(year);
+    if (view.level === 'days') return view;
+    if (day === null || catalog.hours(year, month, day).length === 0) return days(year, month);
     return view;
 };
 
-const LEVEL_OF: Record<Level, Item['level']> = { years: 'year', months: 'month', days: 'day' };
+const LEVEL_OF: Record<Level, Item['level']> = { years: 'year', months: 'month', days: 'day', hours: 'hour' };
 
 export const buildItems = (catalog: Catalog, view: View, selection: readonly string[], step: string | null): Item[] =>
     viewKeys(catalog, view).map(key => {
-        const { year, month, day } = parseKey(key);
+        const { year, month, day, hour } = parseKey(key);
         const selected = selection.includes(key);
         return {
             key,
@@ -69,6 +75,7 @@ export const buildItems = (catalog: Catalog, view: View, selection: readonly str
             year,
             month,
             day,
+            hour,
             selected,
             partial: !selected && selection.some(item => item !== key && contains(key, item)),
             current: step === key,

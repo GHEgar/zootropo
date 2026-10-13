@@ -31,6 +31,19 @@ describe('bindWmsTime', () => {
         binding.destroy();
     });
 
+    it('sends a wide TIME with cql players on time enabled layers', () => {
+        const player = createTimePlayer({ catalog: '2024-01-01,2024-06-01', kind: 'cql', column: 'fecha', initial: ['2024-01'] });
+        const wms = source();
+        const binding = bindWmsTime(player, wms, { cqlTime: 'catalog' });
+        expect(wms.getParams()).toMatchObject({ TIME: '2024-01-01/2024-06-01' });
+        player.setCatalog('2023-01-01,2024-01-01');
+        expect(wms.getParams()).toMatchObject({ TIME: '2023-01-01/2024-01-01' });
+        binding.destroy();
+        const fixed = source();
+        bindWmsTime(player, fixed, { cqlTime: '1990/2030' }).destroy();
+        expect(fixed.getParams()).toMatchObject({ TIME: '1990/2030' });
+    });
+
     it('writes CQL_FILTER for cql players', () => {
         const player = createTimePlayer({ catalog: '2024-01-01', kind: 'cql', column: 'fecha', initial: ['2024'] });
         const wms = source();
