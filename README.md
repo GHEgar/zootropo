@@ -1,10 +1,22 @@
-# zootropo
+# <picture><source media="(prefers-color-scheme: dark)" srcset=".github/assets/icon-dark.svg"><img src=".github/assets/icon-light.svg" width="36" height="36" alt=""></picture> zootropo
 
-Headless time player for WMS layers. zootropo owns the state — which dates exist, which year, months
-or days are selected, the sequence of steps, play/pause, interval, direction, waiting for the layer to
-load — and you own every pixel: it ships no styles, only state, events and ARIA/`data-*` attributes.
-It works with layers that have a `TIME` dimension and with layers filtered by a date column through
-`CQL_FILTER`, and it can drive several layers with one shared clock to compare them.
+[![npm](https://img.shields.io/npm/v/zootropo)](https://www.npmjs.com/package/zootropo)
+[![size](https://img.shields.io/bundlejs/size/zootropo)](https://bundlejs.com/?q=zootropo)
+[![license](https://img.shields.io/github/license/GHEgar/zootropo)](LICENSE)
+
+Headless time player for WMS layers: TIME and CQL dates, selection, playback and synced comparison.
+
+![Two MODIS NDVI maps playing January to September on a shared clock](.github/assets/demo.gif)
+
+**[Live demo](https://ghegar.github.io/zootropo/)**
+
+zootropo owns the state — which dates exist, which year, months or days are selected, the sequence of
+steps, play/pause, interval, direction, waiting for the layer to load — and you own every pixel: it
+ships no styles, only state, events and ARIA/`data-*` attributes. It works with layers that have a
+`TIME` dimension and with layers filtered by a date column through `CQL_FILTER`, and it can drive
+several layers with one shared clock to compare them.
+
+## Install
 
 ```bash
 npm install zootropo
@@ -15,6 +27,25 @@ npm install zootropo
 | `zootropo` | Framework-free core: ISO 8601 parsing, catalog, selection, sequence, player, group | nothing |
 | `zootropo/react` | `useTimePlayer` and `usePlayerGroup` with prop getters | `react >= 19` |
 | `zootropo/ol` | `bindWmsTime` and `GetCapabilities` dimension reader | `ol >= 10` |
+
+## Quick start
+
+```ts
+import { createTimePlayer } from 'zootropo';
+import { bindWmsTime, fetchDimension } from 'zootropo/ol';
+
+const dimension = await fetchDimension('https://example.org/geoserver/wms', 'ws:ndvi');
+
+const player = createTimePlayer({
+    catalog: dimension?.values ?? [],
+    kind: 'time',
+    initial: 'latest',
+    mode: 'timeline',
+});
+
+bindWmsTime(player, tileWmsSource);
+player.play();
+```
 
 ## Preparing your layers
 
@@ -71,6 +102,22 @@ For vector layers in GeoServer without a time dimension.
 | Finest level | Whatever the instants carry, down to hours | Day, or hour with timestamps |
 | Selecting several dates | Only if the server accepts lists (`multiple`) | Always |
 | Typical trap | Service that takes one instant: `multiple: false` | Layer that also has `TIME` on: `cqlTime` |
+
+### Let zootropo check it
+
+```ts
+import { inspectLayer } from 'zootropo/ol';
+
+const report = await inspectLayer('https://example.org/geoserver/ws/wms', 'ws:layer');
+report.path;    // 'time' | 'cql' | 'both' | 'none'
+report.options; // e.g. { kind: 'time', catalog: '2024-01-01/2024-12-01/P1M' }
+report.notes;   // e.g. ['cql-needs-cql-time', 'time-hours']
+```
+
+It reads the time dimension from `GetCapabilities` and the date attributes from WFS
+`DescribeFeatureType`, with the first and last value of each one. Without WFS it still reports the time
+dimension and adds `no-wfs`. The same check is in the [live demo](https://ghegar.github.io/zootropo/)
+under «¿Mi capa es compatible?», no code needed.
 
 ## Core
 
@@ -212,23 +259,30 @@ image loads and calls `loading()`/`ready()`. For a `cql` player on a layer that 
 dimension, pass `cqlTime: 'catalog'` (the catalog extent) or a fixed value to send a wide `TIME` too. `fetchDimensions` reads every layer's dimension from a
 WMS 1.3.0 `GetCapabilities`, by full and local name.
 
-## Notes
+## Known limitations
 
 - A GeoServer layer with a `TIME` dimension applies its default time when the request has no `TIME`,
   even with `CQL_FILTER`. Use `cqlTime` when you filter such a layer by CQL.
 - With several instants in `TIME`, what the server draws depends on the layer. Some services, like
   NASA GIBS, accept a single instant: use `multiple: false`.
 
-## Demo
+## Development
 
 ```bash
+npm test
+npm run lint
+npm run typecheck
 npm run demo
 npm run e2e
 ```
 
-Live at <https://ghegar.github.io/zootropo/>. MODIS NDVI from NASA GIBS on two maps with a shared clock, and Atlantic storms from a public
-GeoServer by `TIME` or by CQL.
+The demo plays MODIS NDVI from NASA GIBS on two maps with a shared clock, and Atlantic storms from a
+public GeoServer by `TIME` or by CQL.
+
+## Contributing
+
+Issues are welcome. Open one before sending a pull request.
 
 ## License
 
-AGPL-3.0-only
+AGPL-3.0-only © GHEgar
