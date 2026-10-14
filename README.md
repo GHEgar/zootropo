@@ -73,9 +73,6 @@ Best for rasters (image mosaics, NetCDF) and for vectors when you control GeoSer
 
    or in code, `await fetchDimension(url, 'ws:layer')` must return `values`.
 5. Create the player with `kind: 'time'` and `catalog: dimension.values`; `bindWmsTime` writes `TIME`.
-6. Some servers accept a single instant per request (NASA GIBS, many raster services): use
-   `multiple: false`. GeoServer accepts lists and ranges, but how several instants are drawn depends on
-   the layer.
 
 ### Path B: a date column and `CQL_FILTER`
 
@@ -86,11 +83,8 @@ For vector layers in GeoServer without a time dimension.
 3. Get the catalog: WMS does not list the values of a column, but GeoServer's WPS does.
    `fetchColumnDates(url, 'ws:layer', 'column')` asks `gs:Unique` and falls back to WFS without WPS;
    `granularity: 'month'` reduces the list. Any list of ISO dates from your backend works too.
-
 4. Create the player with `kind: 'cql'`, `column` and that list as `catalog`; `bindWmsTime` writes
    `CQL_FILTER` (and `baseCql`, if the layer already has a filter of yours).
-5. If the same layer also has a time dimension enabled, GeoServer applies its default time to every
-   request without `TIME` and the CQL comes back empty: pass `cqlTime: 'catalog'` to `bindWmsTime`.
 
 ### Checklist
 
@@ -128,43 +122,36 @@ const player = createTimePlayer({
     catalog: '2000-03-01/2025-03-01/P1M,2025-05-01/2026-08-01/P1M',
     kind: 'time',
     initial: 'latest',
-    onEvent: event => console.log(event),
+    onEvent: event => sync(event),
 });
 
 player.subscribe(() => render(player.getSnapshot()));
-
 player.open('2024');
 player.select('2024-03', 'toggle');
-player.setMode('timeline');
-player.setIntervalMs(500);
-player.setDirection('backward');
 player.play();
 ```
 
+Playback changes at any time with `setMode`, `setIntervalMs`, `setDirection`, `setLoop`, `step(delta)`
+and `seek(key)`.
+
 ### Catalog
 
-The catalog is the list of dates that exist. It accepts the `values` of a WMS `Dimension`, an array
-of ISO strings or `{ instants, ranges }`:
-
-- Lists separated by commas: `2012-01-01T00:00:00Z,2016-01-01T00:00:00Z`.
-- Periodic intervals `start/end/period` are expanded to instants (`P1M`, `P1D`, `PT6H`…). Month steps
-  clamp to the end of the month instead of drifting.
-- Intervals without a period, or with more steps than `maxInstants` (10 000), stay as continuous
-  ranges and are answered lazily.
-
-Dates are calendar strings; the model never uses `Date`, so there are no time zone shifts.
+The catalog is the list of dates that exist. It accepts the `values` of a WMS `Dimension`, an array of
+ISO strings or `{ instants, ranges }`. Comma lists (`2012-01-01T00:00:00Z,2016-01-01T00:00:00Z`) are
+read as they are; periodic intervals `start/end/period` are expanded to instants (`P1M`, `P1D`,
+`PT6H`…), with month steps clamped to the end of the month instead of drifting. Intervals without a
+period, or with more steps than `maxInstants` (10 000), stay as continuous ranges and are answered
+lazily. Dates are calendar strings; the model never uses `Date`, so there are no time zone shifts.
 
 ### Selection and navigation
 
-Five levels: years, months of a year, days of a month, hours of a day and minutes of an hour. Hours
-and minutes only appear when the catalog instants carry a time (radar every 5 minutes, model runs
-every 6 hours). `items` holds what the current `view` shows,
-only what exists in the catalog. `select(key, 'toggle')` adds or removes keys of the same level and
-parent; a key from another level or parent replaces the selection. `multiple: false` keeps one key;
-`multiple: 'mixed'` lets any keys live together and drops the ancestors and descendants of a key you add.
-`open(key)` goes one level down, `back()` one level up.
-
-Keys are `YYYY`, `YYYY-MM`, `YYYY-MM-DD`, `YYYY-MM-DDTHH` and `YYYY-MM-DDTHH:MM`.
+Five levels: years, months of a year, days of a month, hours of a day and minutes of an hour, with keys
+`YYYY`, `YYYY-MM`, `YYYY-MM-DD`, `YYYY-MM-DDTHH` and `YYYY-MM-DDTHH:MM`. Hours and minutes only appear
+when the catalog instants carry a time (radar every 5 minutes, model runs every 6 hours). `items` holds
+what the current `view` shows, only what exists in the catalog. `select(key, 'toggle')` adds or removes
+keys of the same level and parent; a key from another level or parent replaces the selection.
+`multiple: false` keeps one key; `multiple: 'mixed'` lets any keys live together and drops the
+ancestors and descendants of a key you add. `open(key)` goes one level down, `back()` one level up.
 
 ### Value
 
@@ -177,11 +164,7 @@ Keys are `YYYY`, `YYYY-MM`, `YYYY-MM-DD`, `YYYY-MM-DDTHH` and `YYYY-MM-DDTHH:MM`
 
 | Mode | Steps |
 |---|---|
-| `year` | Every year, or the selected years when there are two or more |
-| `month` | The months of the selected year, or the selected months when there are two or more |
-| `day` | The days of the selected month, or the selected days when there are two or more |
-| `hour` | The hours of the selected day, or the selected hours when there are two or more |
-| `minute` | The minutes of the selected hour, or the selected minutes when there are two or more |
+| `year`, `month`, `day`, `hour`, `minute` | The units of that level inside the selected parent (every year for `year`), or the selected keys when there are two or more |
 | `timeline` | The whole catalog at `granularity` (`month` by default), across years |
 | `auto` | Inferred from the selection, then the view; the first mode with at least two steps |
 
@@ -189,57 +172,23 @@ Keys are `YYYY`, `YYYY-MM`, `YYYY-MM-DD`, `YYYY-MM-DDTHH` and `YYYY-MM-DDTHH:MM`
 The interval is clamped to 100–10 000 ms. With `loop: false` the player pauses after the last step.
 Changing the selection by hand pauses and goes back to the selection.
 
-### Live layers
+### More
 
-`PRESENT`, `present`, `current` and `now` in a dimension resolve to the current time, so
-`2024-06-01T10:00:00Z/PRESENT/PT5M` keeps growing. `updateCatalog(values)` swaps the catalog without
-stopping playback: the step and the selection stay when they still exist, and a timeline gets the new
-steps. With `follow: true`, a selection sitting on the latest date moves to the new latest one.
-`watchDimension` in `zootropo/ol` does the polling.
-
-### Waiting for the layer
-
-Call `loading()` when the layer starts loading the new step and `ready()` when it finishes. The
-player waits for `ready()` before advancing and pauses with a `timeout` event after `timeoutMs`
-(30 s). `bindWmsTime` does this for you.
-
-### Comparing layers
-
-```ts
-import { createPlayerGroup } from 'zootropo';
-
-const group = createPlayerGroup([terra, aqua], { intervalMs: 1000 });
-group.play();
-```
-
-One clock, interval and direction for every member. The group walks the union of the members'
-sequences; a member that has no such date keeps its previous step and reports `stale: true`. It
-waits until every member is ready. Play, pause or a manual selection on a member act on the group.
-
-### Dates in the URL
-
-`syncUrl(player, { param: 'date' })` reads the selection from the query string once the catalog
-arrives and writes it back with `history.replaceState` (`push` on request). Runs of three or more
-consecutive keys are compacted: `?date=2024-01..2024-06,2024-09`. `toParam` and `fromParam` do the
-conversion on their own; in React, `useUrlSync(player)`.
-
-### Labels
-
-```ts
-import { createFormatter } from 'zootropo';
-
-const format = createFormatter({ locale: 'es-MX' });
-format.keys(['2024-01', '2024-02', '2024-03']);
-```
-
-`Intl.DateTimeFormat` with the locale you pass; English by default.
+| Feature | API | Behavior |
+|---|---|---|
+| Live layers | `updateCatalog(values)`, `follow` | `PRESENT`, `present`, `current` and `now` resolve to the current time, so `2024-06-01T10:00:00Z/PRESENT/PT5M` keeps growing. `updateCatalog` swaps the catalog without stopping playback: the step and the selection stay when they still exist, and a timeline gets the new steps. With `follow: true`, a selection on the latest date moves to the new latest one. `watchDimension` does the polling |
+| Waiting for the layer | `loading()`, `ready()`, `timeoutMs` | The player waits for `ready()` before advancing and pauses with a `timeout` event after `timeoutMs` (30 s). `bindWmsTime` calls both for you |
+| Comparing layers | `createPlayerGroup([terra, aqua], { intervalMs: 1000 })` | One clock, interval and direction for every member. The group walks the union of the members' sequences; a member without that date keeps its previous step and reports `stale: true`. It waits until every member is ready; play, pause or a manual selection on a member act on the group |
+| Dates in the URL | `syncUrl(player, { param: 'date' })`, `toParam`, `fromParam` | Reads the selection from the query string once the catalog arrives and writes it back with `history.replaceState` (`push` on request). Runs of three or more consecutive keys are compacted: `?date=2024-01..2024-06,2024-09`. In React, `useUrlSync(player)` |
+| Labels | `createFormatter({ locale: 'es-MX' }).keys(keys)` | `Intl.DateTimeFormat` with the locale you pass; English by default |
 
 ## React
 
 ```tsx
+import type { TimePlayer } from 'zootropo';
 import { useTimePlayer } from 'zootropo/react';
 
-function Dates({ player }) {
+export function Dates({ player }: { player: TimePlayer }) {
     const t = useTimePlayer(player);
     return (
         <>
@@ -248,52 +197,29 @@ function Dates({ player }) {
                 {t.items.map(item => <li key={item.key} {...t.getItemProps(item)}>{item.key}</li>)}
             </ul>
             <button {...t.getPlayProps()}>{t.playing ? 'Pause' : 'Play'}</button>
-            <button {...t.getStepProps(1)}>Next</button>
-            <button {...t.getIntervalProps()}>{t.intervalMs / 1000} s</button>
-            <button {...t.getDirectionProps()}>{t.direction}</button>
         </>
     );
 }
 ```
 
-Items carry `aria-selected`, `aria-current="step"` and `data-selected`, `data-partial`,
-`data-current`, `data-contains-current`. Clicking a year selects it and opens its months
-(`openOnSelect`); double click or `ArrowRight` opens, `ArrowLeft` goes back. `usePlayerGroup` gives
-the same transport getters for a group. Every label can be replaced with `labels`.
+`getStepProps(delta)`, `getIntervalProps()` and `getDirectionProps()` complete the transport. Items
+carry `aria-selected`, `aria-current="step"` and `data-selected`, `data-partial`, `data-current`,
+`data-contains-current`. Clicking a year selects it and opens its months (`openOnSelect`); double click
+or `ArrowRight` opens, `ArrowLeft` goes back. `usePlayerGroup` gives the same transport getters for a
+group. Every label can be replaced with `labels`.
 
 ## OpenLayers
 
-```ts
-import { bindWmsTime, fetchDimension, watchDimension } from 'zootropo/ol';
+`bindWmsTime(player, source)` writes `TIME` (or `CQL_FILTER` for `cql` players) with `updateParams`,
+counts tile and image loads and calls `loading()`/`ready()`. For a `cql` player on a layer that also has
+a time dimension, pass `cqlTime: 'catalog'` (the catalog extent) or a fixed value to send a wide `TIME`
+too. `fetchDimension(url, layer)` reads one layer's dimension and `fetchDimensions` every layer's, from a
+WMS 1.3.0 `GetCapabilities`, by full and local name. `watchDimension(player, url, layer, { intervalMs })`
+reads it again every `intervalMs` (one minute by default, five seconds at least), calls `updateCatalog`
+only when the values change, and returns a handle with `stop()`.
 
-const dimension = await fetchDimension('https://example.org/geoserver/wms', 'ws:layer');
-player.setCatalog(dimension?.values ?? []);
-const binding = bindWmsTime(player, tileWmsSource);
-```
-
-`bindWmsTime` writes `TIME` (or `CQL_FILTER` for `cql` players) with `updateParams`, counts tile and
-image loads and calls `loading()`/`ready()`. For a `cql` player on a layer that also has a time
-dimension, pass `cqlTime: 'catalog'` (the catalog extent) or a fixed value to send a wide `TIME` too. `fetchDimensions` reads every layer's dimension from a
-WMS 1.3.0 `GetCapabilities`, by full and local name.
-
-```ts
-const watch = watchDimension(player, 'https://example.org/geoserver/wms', 'ws:radar', { intervalMs: 60_000 });
-watch.stop();
-```
-
-`watchDimension` reads the dimension again every `intervalMs` (one minute by default, five seconds at
-least) and calls `updateCatalog` only when the values change.
-
-For smooth playback give `bindWmsBuffer` two identical WMS layers instead of `bindWmsTime`:
-
-```ts
-const front = new TileLayer({ source: new TileWMS({ url, params: { LAYERS: 'ws:ndvi' } }) });
-const back = new TileLayer({ source: new TileWMS({ url, params: { LAYERS: 'ws:ndvi' } }) });
-map.getLayers().extend([front, back]);
-const buffer = bindWmsBuffer(player, front, back);
-```
-
-The front layer shows the current step while the back one, at opacity 0, loads the next. When the
+For smooth playback use `bindWmsBuffer(player, front, back)` instead of `bindWmsTime`, with two
+identical WMS layers added to the map. The front layer shows the current step while the back one, at opacity 0, loads the next. When the
 player reaches it, they swap, and the player only waits if the next step was not loaded yet. With the
 NDVI layers of the demo the time spent waiting for tiles went from about 65 % to 15 %.
 
