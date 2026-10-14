@@ -5,6 +5,12 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y 
 
 ## [No publicado]
 
+## [0.4.1] - 2026-10-14
+
+### Cambiado
+
+- Metadatos del paquete: `keywords` para la búsqueda de npm, `homepage` al demo y `bugs` a los issues.
+
 ## [0.4.0] - 2026-10-14
 
 ### Agregado
