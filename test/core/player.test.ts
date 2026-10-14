@@ -19,7 +19,7 @@ describe('createTimePlayer', () => {
         const player = createTimePlayer({ catalog: MONTHLY, kind: 'cql', column: 'fecha' });
         player.select('2024');
         player.open('2024');
-        expect(player.getSnapshot().view).toEqual({ level: 'months', year: 2024, month: null, day: null });
+        expect(player.getSnapshot().view).toEqual({ level: 'months', year: 2024, month: null, day: null, hour: null });
         player.select('2024-02', 'toggle');
         player.select('2024-03', 'toggle');
         expect(player.getSnapshot().selection).toEqual(['2024-02', '2024-03']);
@@ -119,7 +119,7 @@ describe('createTimePlayer', () => {
         player.open('2024');
         player.open('2024-03');
         player.open('2024-03-01');
-        expect(player.getSnapshot().view).toEqual({ level: 'hours', year: 2024, month: 3, day: 1 });
+        expect(player.getSnapshot().view).toEqual({ level: 'hours', year: 2024, month: 3, day: 1, hour: null });
         expect(player.getSnapshot().items.map(item => item.hour)).toEqual([0, 6, 12, 18]);
         player.select('2024-03-01T06');
         player.play();

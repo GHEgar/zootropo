@@ -5,13 +5,15 @@ export interface KeyParts {
     month: number | null;
     day: number | null;
     hour: number | null;
+    minute: number | null;
     granularity: Granularity;
 }
 
 export const DAY_MS = 86_400_000;
 export const HOUR_MS = 3_600_000;
+export const MINUTE_MS = 60_000;
 
-const KEY = /^(-?\d{4,})(?:-(\d{2})(?:-(\d{2})(?:T(\d{2}))?)?)?$/;
+const KEY = /^(-?\d{4,})(?:-(\d{2})(?:-(\d{2})(?:T(\d{2})(?::(\d{2}))?)?)?)?$/;
 
 const floorDiv = (a: number, b: number): number => Math.floor(a / b);
 
@@ -45,11 +47,12 @@ const pad = (value: number, size = 2): string => String(value).padStart(size, '0
 
 export const yearText = (year: number): string => (year < 0 ? `-${pad(-year, 4)}` : pad(year, 4));
 
-export const toKey = (year: number, month?: number | null, day?: number | null, hour?: number | null): string => {
+export const toKey = (year: number, month?: number | null, day?: number | null, hour?: number | null, minute?: number | null): string => {
     if (month == null) return yearText(year);
     if (day == null) return `${yearText(year)}-${pad(month)}`;
     if (hour == null) return `${yearText(year)}-${pad(month)}-${pad(day)}`;
-    return `${yearText(year)}-${pad(month)}-${pad(day)}T${pad(hour)}`;
+    if (minute == null) return `${yearText(year)}-${pad(month)}-${pad(day)}T${pad(hour)}`;
+    return `${yearText(year)}-${pad(month)}-${pad(day)}T${pad(hour)}:${pad(minute)}`;
 };
 
 export const isoDate = (days: number): string => {
@@ -64,8 +67,13 @@ export const parseKey = (key: string): KeyParts => {
     const month = match[2] ? Number(match[2]) : null;
     const day = match[3] ? Number(match[3]) : null;
     const hour = match[4] ? Number(match[4]) : null;
-    const granularity: Granularity = hour !== null ? 'hour' : day !== null ? 'day' : month !== null ? 'month' : 'year';
-    return { year, month, day, hour, granularity };
+    const minute = match[5] ? Number(match[5]) : null;
+    let granularity: Granularity = 'year';
+    if (minute !== null) granularity = 'minute';
+    else if (hour !== null) granularity = 'hour';
+    else if (day !== null) granularity = 'day';
+    else if (month !== null) granularity = 'month';
+    return { year, month, day, hour, minute, granularity };
 };
 
 export const isKey = (key: string): boolean => KEY.test(key);
@@ -84,10 +92,14 @@ export const lastDay = (key: string): number => {
     return dayNumber(year, 12, 31);
 };
 
-export const startAt = (key: string): number => firstDay(key) * DAY_MS + (parseKey(key).hour ?? 0) * HOUR_MS;
+export const startAt = (key: string): number => {
+    const { hour, minute } = parseKey(key);
+    return firstDay(key) * DAY_MS + (hour ?? 0) * HOUR_MS + (minute ?? 0) * MINUTE_MS;
+};
 
 export const endAt = (key: string): number => {
-    const { hour } = parseKey(key);
+    const { hour, minute } = parseKey(key);
+    if (minute !== null) return startAt(key) + MINUTE_MS;
     return hour === null ? (lastDay(key) + 1) * DAY_MS : startAt(key) + HOUR_MS;
 };
 
@@ -97,7 +109,9 @@ export const keyOfAt = (at: number, granularity: Granularity): string => {
     if (granularity === 'year') return toKey(year);
     if (granularity === 'month') return toKey(year, month);
     if (granularity === 'day') return toKey(year, month, day);
-    return toKey(year, month, day, floorDiv(at - days * DAY_MS, HOUR_MS));
+    const rest = at - days * DAY_MS;
+    if (granularity === 'hour') return toKey(year, month, day, floorDiv(rest, HOUR_MS));
+    return toKey(year, month, day, floorDiv(rest, HOUR_MS), floorDiv(rest - floorDiv(rest, HOUR_MS) * HOUR_MS, MINUTE_MS));
 };
 
 export const keyOfDay = (days: number, granularity: Granularity): string => keyOfAt(days * DAY_MS, granularity);
@@ -110,18 +124,20 @@ export const shiftKey = (key: string, delta: number): string => {
         return toKey(floorDiv(index, 12), index - floorDiv(index, 12) * 12 + 1);
     }
     if (granularity === 'day') return isoDate(firstDay(key) + delta);
-    return keyOfAt(startAt(key) + delta * HOUR_MS, 'hour');
+    if (granularity === 'hour') return keyOfAt(startAt(key) + delta * HOUR_MS, 'hour');
+    return keyOfAt(startAt(key) + delta * MINUTE_MS, 'minute');
 };
 
 export const parentKey = (key: string): string | null => {
-    const { year, month, day, granularity } = parseKey(key);
+    const { year, month, day, hour, granularity } = parseKey(key);
     if (granularity === 'year') return null;
     if (granularity === 'month') return toKey(year);
     if (granularity === 'day') return toKey(year, month);
-    return toKey(year, month, day);
+    if (granularity === 'hour') return toKey(year, month, day);
+    return toKey(year, month, day, hour);
 };
 
-const RANK: Record<Granularity, number> = { year: 0, month: 1, day: 2, hour: 3 };
+const RANK: Record<Granularity, number> = { year: 0, month: 1, day: 2, hour: 3, minute: 4 };
 
 export const compareKeys = (a: string, b: string): number =>
     startAt(a) - startAt(b) || RANK[granularityOf(a)] - RANK[granularityOf(b)];

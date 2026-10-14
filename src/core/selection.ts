@@ -1,5 +1,5 @@
 import type { Catalog } from './catalog.js';
-import { contains, granularityOf, isKey, parentKey, parseKey, sortKeys, toKey } from './keys.js';
+import { contains, granularityOf, isKey, parentKey, parseKey, sortKeys, toKey, type KeyParts } from './keys.js';
 import type { Item, Level, Multiple, SelectMode, View } from './types.js';
 
 export const sameGroup = (a: string, b: string): boolean =>
@@ -18,60 +18,55 @@ export const applySelect = (current: readonly string[], key: string, mode: Selec
     return selected ? current.filter(item => item !== key) : sortKeys([...current, key]);
 };
 
-export const YEARS: View = { level: 'years', year: null, month: null, day: null };
+export const YEARS: View = { level: 'years', year: null, month: null, day: null, hour: null };
 
-const months = (year: number): View => ({ level: 'months', year, month: null, day: null });
-const days = (year: number, month: number | null): View => ({ level: 'days', year, month, day: null });
-const hours = (year: number, month: number | null, day: number | null): View => ({ level: 'hours', year, month, day });
+const LEVELS: readonly Level[] = ['years', 'months', 'days', 'hours', 'minutes'];
+const GRANULARITIES: readonly Item['level'][] = ['year', 'month', 'day', 'hour', 'minute'];
 
-export const viewInside = (key: string): View => {
-    const { year, month, day, granularity } = parseKey(key);
-    if (granularity === 'year') return months(year);
-    if (granularity === 'month') return days(year, month);
-    return hours(year, month, day);
+const viewAt = (depth: number, parts: Partial<KeyParts>): View => ({
+    level: LEVELS[depth] as Level,
+    year: depth > 0 ? parts.year ?? null : null,
+    month: depth > 1 ? parts.month ?? null : null,
+    day: depth > 2 ? parts.day ?? null : null,
+    hour: depth > 3 ? parts.hour ?? null : null,
+});
+
+const depthOf = (key: string): number => GRANULARITIES.indexOf(parseKey(key).granularity);
+
+export const viewInside = (key: string): View => viewAt(Math.min(depthOf(key) + 1, LEVELS.length - 1), parseKey(key));
+
+export const viewShowing = (key: string): View => viewAt(depthOf(key), parseKey(key));
+
+export const viewAbove = (view: View): View => viewAt(Math.max(LEVELS.indexOf(view.level) - 1, 0), view as Partial<KeyParts>);
+
+const childrenOf = (catalog: Catalog, view: View): string[] | null => {
+    const { year, month, day, hour } = view;
+    if (view.level === 'years') return catalog.years().map(item => toKey(item));
+    if (year === null) return null;
+    if (view.level === 'months') return catalog.months(year).map(item => toKey(year, item));
+    if (month === null) return null;
+    if (view.level === 'days') return catalog.days(year, month).map(item => toKey(year, month, item));
+    if (day === null) return null;
+    if (view.level === 'hours') return catalog.hours(year, month, day).map(item => toKey(year, month, day, item));
+    if (hour === null) return null;
+    return catalog.minutes(year, month, day, hour).map(item => toKey(year, month, day, hour, item));
 };
 
-export const viewShowing = (key: string): View => {
-    const { year, month, day, granularity } = parseKey(key);
-    if (granularity === 'year') return YEARS;
-    if (granularity === 'month') return months(year);
-    if (granularity === 'day') return days(year, month);
-    return hours(year, month, day);
-};
+export const viewKeys = (catalog: Catalog, view: View): string[] => childrenOf(catalog, view) ?? childrenOf(catalog, YEARS) ?? [];
 
-export const viewAbove = (view: View): View => {
-    if (view.year === null) return YEARS;
-    if (view.level === 'hours') return days(view.year, view.month);
-    if (view.level === 'days') return months(view.year);
+export const validView = (catalog: Catalog, view: View): View => {
+    for (let depth = LEVELS.indexOf(view.level); depth > 0; depth--) {
+        const candidate = viewAt(depth, view as Partial<KeyParts>);
+        if ((childrenOf(catalog, candidate) ?? []).length > 0) return candidate;
+    }
     return YEARS;
 };
 
-export const viewKeys = (catalog: Catalog, view: View): string[] => {
-    const { year, month, day } = view;
-    if (year === null) return catalog.years().map(item => toKey(item));
-    if (view.level === 'months') return catalog.months(year).map(item => toKey(year, item));
-    if (view.level === 'days' && month !== null) return catalog.days(year, month).map(item => toKey(year, month, item));
-    if (view.level === 'hours' && month !== null && day !== null) {
-        return catalog.hours(year, month, day).map(item => toKey(year, month, day, item));
-    }
-    return catalog.years().map(item => toKey(item));
-};
-
-export const validView = (catalog: Catalog, view: View): View => {
-    const { year, month, day } = view;
-    if (view.level === 'years' || year === null || !catalog.has(toKey(year))) return YEARS;
-    if (view.level === 'months') return view;
-    if (month === null || !catalog.has(toKey(year, month))) return months(year);
-    if (view.level === 'days') return view;
-    if (day === null || catalog.hours(year, month, day).length === 0) return days(year, month);
-    return view;
-};
-
-const LEVEL_OF: Record<Level, Item['level']> = { years: 'year', months: 'month', days: 'day', hours: 'hour' };
+const LEVEL_OF: Record<Level, Item['level']> = { years: 'year', months: 'month', days: 'day', hours: 'hour', minutes: 'minute' };
 
 export const buildItems = (catalog: Catalog, view: View, selection: readonly string[], step: string | null): Item[] =>
     viewKeys(catalog, view).map(key => {
-        const { year, month, day, hour } = parseKey(key);
+        const { year, month, day, hour, minute } = parseKey(key);
         const selected = selection.includes(key);
         return {
             key,
@@ -80,6 +75,7 @@ export const buildItems = (catalog: Catalog, view: View, selection: readonly str
             month,
             day,
             hour,
+            minute,
             selected,
             partial: !selected && selection.some(item => item !== key && contains(key, item)),
             current: step === key,

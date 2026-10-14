@@ -1,6 +1,6 @@
 import { createCatalog, type Catalog } from './catalog.js';
 import { createClock } from './clock.js';
-import { contains, isKey, sortKeys } from './keys.js';
+import { contains, granularityOf, isKey, sortKeys } from './keys.js';
 import { MEMBER, type GroupLink, type Member } from './member.js';
 import type { PlayerOptions, PlayerSnapshot, TimePlayer } from './player-types.js';
 import {
@@ -200,6 +200,25 @@ export const createTimePlayer = (options: PlayerOptions = {}): TimePlayer => {
                 catalog: next, selection: state.selection.filter(key => next.has(key)),
                 view: validView(next, state.view), frozen: null, step: null, stale: false,
             });
+        },
+        updateCatalog(input) {
+            const next = createCatalog(input);
+            const first = state.selection[0];
+            const wasLatest = state.selection.length === 1 && first !== undefined
+                && state.catalog.latest(granularityOf(first)) === first;
+            let selection = state.selection.filter(key => next.has(key));
+            const latest = first ? next.latest(granularityOf(first)) : null;
+            if (options.follow && wasLatest && latest) selection = [latest];
+            const patch: Partial<State> = { catalog: next, selection, view: validView(next, state.view), stale: false };
+            if (state.frozen) {
+                const sequence = sequenceOf({ ...state, ...patch, frozen: null });
+                const keep = state.step && sequence.keys.includes(state.step);
+                patch.frozen = sequence.keys.length >= 2 ? sequence : null;
+                if (!keep) patch.step = null;
+                if (!patch.frozen) halt();
+            }
+            set(patch);
+            if (options.follow && wasLatest && latest && latest !== first && !state.playing) emit({ type: 'select', keys: selection });
         },
         select: (key, mode = 'replace') => changeSelection(applySelect(state.selection, key, mode, multiple)),
         setSelection: keys => changeSelection(sortKeys(keys.filter(key => isKey(key) && state.catalog.has(key))).slice(0, multiple ? undefined : 1)),

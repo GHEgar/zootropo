@@ -19,6 +19,7 @@ export interface PlayerOptions {
     initial?: 'latest' | 'none' | readonly string[];
     compact?: boolean;
     limit?: number;
+    follow?: boolean;
     onEvent?: (event: PlayerEvent) => void;
 }
 
@@ -55,6 +56,7 @@ export interface TimePlayer {
     getSnapshot(): PlayerSnapshot;
     destroy(): void;
     setCatalog(input: CatalogInput): void;
+    updateCatalog(input: CatalogInput): void;
     select(key: string, mode?: SelectMode): void;
     setSelection(keys: readonly string[]): void;
     clearSelection(): void;

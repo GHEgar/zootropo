@@ -92,3 +92,10 @@ describe('createFormatter', () => {
         expect(format.keys(['2024-01', '2024-03', '2024-05', '2024-07'])).toBe('4 months');
     });
 });
+
+describe('minute keys', () => {
+    it('shifts and contains minutes', () => {
+        expect(shiftKey('2024-06-01T23:59', 1)).toBe('2024-06-02T00:00');
+        expect(shiftKey('2024-06-01T10:00', -5)).toBe('2024-06-01T09:55');
+    });
+});

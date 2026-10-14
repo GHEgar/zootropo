@@ -105,7 +105,21 @@ const approximateMs = (duration: Duration): number => duration.months * 30.43687
 
 export interface ParseOptions {
     maxInstants?: number;
+    now?: number;
 }
+
+const PRESENT = /^(present|current|now)$/i;
+
+const DAY = 86_400_000;
+
+const nowInstant = (now: number, like: Instant | null): Instant => {
+    const day = Math.floor(now / DAY);
+    const shape: Shape = like?.shape ?? { time: true, seconds: true, fraction: 0, zone: true };
+    return build(day, shape.time ? now - day * DAY : 0, shape);
+};
+
+const resolve = (text: string, now: number, like: Instant | null): Instant | null =>
+    (PRESENT.test(text.trim()) ? nowInstant(now, like) : parseInstant(text));
 
 export const parseTimeDimension = (values: string, options: ParseOptions = {}): TimeDimension => {
     const maxInstants = options.maxInstants ?? 10_000;
@@ -113,13 +127,13 @@ export const parseTimeDimension = (values: string, options: ParseOptions = {}): 
     const ranges: TimeRange[] = [];
     for (const token of values.split(',').map(part => part.trim()).filter(Boolean)) {
         if (!token.includes('/')) {
-            const instant = parseInstant(token);
+            const instant = resolve(token, options.now ?? Date.now(), null);
             if (instant) instants.push(instant.text);
             continue;
         }
         const [from = '', to = '', period] = token.split('/');
         const start = parseInstant(from);
-        const end = parseInstant(to);
+        const end = resolve(to, options.now ?? Date.now(), start);
         if (!start || !end || end.at < start.at) continue;
         if (start.at === end.at) {
             instants.push(start.text);

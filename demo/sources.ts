@@ -9,7 +9,7 @@ export const STORMS_TIME = 'geosolutions:storm_obs_test';
 export const STORMS_CQL = 'geosolutions:storm_obs';
 export const STORMS_COLUMN = 'obs_dateti';
 
-const UNITS = { year: ['año', 'años'], month: ['mes', 'meses'], day: ['día', 'días'], hour: ['hora', 'horas'] } as const;
+const UNITS = { year: ['año', 'años'], month: ['mes', 'meses'], day: ['día', 'días'], hour: ['hora', 'horas'], minute: ['minuto', 'minutos'] } as const;
 
 export const formatter = createFormatter({
     locale: 'es-MX',

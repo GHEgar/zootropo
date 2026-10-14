@@ -2,15 +2,16 @@ import { toKey, useTimePlayer, type Granularity, type Item, type RequestedMode, 
 import { LABELS, formatter } from './sources';
 import { Transport } from './Transport';
 
-const MODES: RequestedMode[] = ['auto', 'year', 'month', 'day', 'hour', 'timeline'];
+const MODES: RequestedMode[] = ['auto', 'year', 'month', 'day', 'hour', 'minute', 'timeline'];
 const MODE_LABELS: Record<RequestedMode, string> = {
-    auto: 'Auto', year: 'Años', month: 'Meses', day: 'Días', hour: 'Horas', timeline: 'Línea de tiempo',
+    auto: 'Auto', year: 'Años', month: 'Meses', day: 'Días', hour: 'Horas', minute: 'Minutos', timeline: 'Línea de tiempo',
 };
 
 const itemLabel = (item: Item): string => {
     if (item.level === 'year') return String(item.year);
     if (item.level === 'month' && item.month !== null) return formatter.month(item.month, 'short');
     if (item.level === 'hour' && item.hour !== null) return formatter.hour(item.hour);
+    if (item.level === 'minute' && item.hour !== null && item.minute !== null) return formatter.minute(item.hour, item.minute);
     return String(item.day);
 };
 
@@ -24,7 +25,7 @@ export function Selector({ player, title }: Props) {
     const { view } = t;
     const where = view.level === 'years' || view.year === null
         ? 'Años'
-        : view.level === 'months' ? String(view.year) : formatter.key(toKey(view.year, view.month, view.level === 'hours' ? view.day : null));
+        : view.level === 'months' ? String(view.year) : formatter.key(toKey(view.year, view.month, view.level === 'days' ? null : view.day, view.level === 'minutes' ? view.hour : null));
 
     return (
         <section className="selector" data-stale={t.stale || undefined}>
@@ -59,6 +60,7 @@ export function Selector({ player, title }: Props) {
                             <option value="month">mes</option>
                             <option value="day">día</option>
                             <option value="hour">hora</option>
+                            <option value="minute">minuto</option>
                         </select>
                     </label>
                 )}

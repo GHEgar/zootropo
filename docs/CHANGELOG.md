@@ -5,6 +5,27 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y 
 
 ## [No publicado]
 
+## [0.5.0] - 2026-10-14
+
+### Agregado
+
+- Nivel de minutos: llaves `YYYY-MM-DDTHH:MM`, vista `minutes`, modo `minute`, `catalog.minutes()`,
+  `formatter.minute()` y CQL al minuto. Pensado para radares y capas cada pocos minutos.
+- Capas en vivo: `PRESENT`, `current` y `now` en la dimensión se resuelven a la hora actual;
+  `player.updateCatalog()` cambia el catálogo sin detener la reproducción; `follow: true` lleva la
+  selección a la fecha más reciente; `watchDimension()` en `zootropo/ol` vuelve a leer la dimensión
+  cada cierto tiempo.
+- `release.yml`: un tag `vX.Y.Z` corre las pruebas, crea el release con su sección del CHANGELOG y
+  publica en npm con procedencia (trusted publishing) y en GitHub Packages.
+
+### Cambiado
+
+- La vista lleva `hour` y los ítems `minute`.
+
+### Eliminado
+
+- `packages.yml`: lo cubre `release.yml`.
+
 ## [0.4.1] - 2026-10-14
 
 ### Cambiado

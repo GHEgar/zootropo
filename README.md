@@ -159,14 +159,15 @@ Dates are calendar strings; the model never uses `Date`, so there are no time zo
 
 ### Selection and navigation
 
-Four levels: years, months of a year, days of a month and hours of a day. The hour level only appears
-when the catalog instants carry a time. `items` holds what the current `view` shows,
+Five levels: years, months of a year, days of a month, hours of a day and minutes of an hour. Hours
+and minutes only appear when the catalog instants carry a time (radar every 5 minutes, model runs
+every 6 hours). `items` holds what the current `view` shows,
 only what exists in the catalog. `select(key, 'toggle')` adds or removes keys of the same level and
 parent; a key from another level or parent replaces the selection. `multiple: false` keeps one key;
 `multiple: 'mixed'` lets any keys live together and drops the ancestors and descendants of a key you add.
 `open(key)` goes one level down, `back()` one level up.
 
-Keys are `YYYY`, `YYYY-MM`, `YYYY-MM-DD` and `YYYY-MM-DDTHH`.
+Keys are `YYYY`, `YYYY-MM`, `YYYY-MM-DD`, `YYYY-MM-DDTHH` and `YYYY-MM-DDTHH:MM`.
 
 ### Value
 
@@ -183,12 +184,21 @@ Keys are `YYYY`, `YYYY-MM`, `YYYY-MM-DD` and `YYYY-MM-DDTHH`.
 | `month` | The months of the selected year, or the selected months when there are two or more |
 | `day` | The days of the selected month, or the selected days when there are two or more |
 | `hour` | The hours of the selected day, or the selected hours when there are two or more |
+| `minute` | The minutes of the selected hour, or the selected minutes when there are two or more |
 | `timeline` | The whole catalog at `granularity` (`month` by default), across years |
 | `auto` | Inferred from the selection, then the view; the first mode with at least two steps |
 
 `play()` starts on the selected step when it is part of the sequence, otherwise on the first one.
 The interval is clamped to 100–10 000 ms. With `loop: false` the player pauses after the last step.
 Changing the selection by hand pauses and goes back to the selection.
+
+### Live layers
+
+`PRESENT`, `present`, `current` and `now` in a dimension resolve to the current time, so
+`2024-06-01T10:00:00Z/PRESENT/PT5M` keeps growing. `updateCatalog(values)` swaps the catalog without
+stopping playback: the step and the selection stay when they still exist, and a timeline gets the new
+steps. With `follow: true`, a selection sitting on the latest date moves to the new latest one.
+`watchDimension` in `zootropo/ol` does the polling.
 
 ### Waiting for the layer
 
@@ -250,7 +260,7 @@ the same transport getters for a group. Every label can be replaced with `labels
 ## OpenLayers
 
 ```ts
-import { bindWmsTime, fetchDimension } from 'zootropo/ol';
+import { bindWmsTime, fetchDimension, watchDimension } from 'zootropo/ol';
 
 const dimension = await fetchDimension('https://example.org/geoserver/wms', 'ws:layer');
 player.setCatalog(dimension?.values ?? []);
@@ -261,6 +271,14 @@ const binding = bindWmsTime(player, tileWmsSource);
 image loads and calls `loading()`/`ready()`. For a `cql` player on a layer that also has a time
 dimension, pass `cqlTime: 'catalog'` (the catalog extent) or a fixed value to send a wide `TIME` too. `fetchDimensions` reads every layer's dimension from a
 WMS 1.3.0 `GetCapabilities`, by full and local name.
+
+```ts
+const watch = watchDimension(player, 'https://example.org/geoserver/wms', 'ws:radar', { intervalMs: 60_000 });
+watch.stop();
+```
+
+`watchDimension` reads the dimension again every `intervalMs` (one minute by default, five seconds at
+least) and calls `updateCatalog` only when the values change.
 
 ## Known limitations
 
@@ -281,6 +299,9 @@ npm run e2e
 
 The demo plays MODIS NDVI from NASA GIBS on two maps with a shared clock, and Atlantic storms from a
 public GeoServer by `TIME` or by CQL.
+
+A `vX.Y.Z` tag that matches `package.json` runs `release.yml`: tests, the GitHub release with that
+version's changelog section, npm with provenance (trusted publishing, no token) and GitHub Packages.
 
 ## Contributing
 

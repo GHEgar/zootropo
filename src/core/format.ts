@@ -12,6 +12,7 @@ export interface Formatter {
     key(key: string, style?: 'long' | 'short'): string;
     month(month: number, style?: 'long' | 'short'): string;
     hour(hour: number): string;
+    minute(hour: number, minute: number): string;
     keys(keys: readonly string[]): string;
 }
 
@@ -60,6 +61,7 @@ export const createFormatter = (options: FormatOptions = {}): Formatter => {
         key,
         month: (month, style = 'long') => formats.monthOnly(style).format(toDate(startAt(`2000-${String(month).padStart(2, '0')}`))),
         hour: hour => formats.hourOnly.format(toDate(hour * 3_600_000)),
+        minute: (hour, minute) => formats.hourOnly.format(toDate(hour * 3_600_000 + minute * 60_000)),
         keys(values) {
             const sorted = sortKeys(values);
             const first = sorted[0];

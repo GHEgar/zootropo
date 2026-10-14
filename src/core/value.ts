@@ -62,7 +62,9 @@ const literal = (at: number): string => {
     const day = Math.floor(at / DAY_MS);
     const rest = at - day * DAY_MS;
     if (rest === 0) return isoDate(day);
-    return `${isoDate(day)}T${String(Math.floor(rest / 3_600_000)).padStart(2, '0')}:00:00Z`;
+    const hours = String(Math.floor(rest / 3_600_000)).padStart(2, '0');
+    const minutes = String(Math.floor((rest % 3_600_000) / 60_000)).padStart(2, '0');
+    return `${isoDate(day)}T${hours}:${minutes}:00Z`;
 };
 
 export const cqlValue = (column: string, keys: readonly string[]): string | null => {

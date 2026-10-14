@@ -17,19 +17,21 @@ interface Anchor {
     year: number | null;
     month: number | null;
     day: number | null;
+    hour: number | null;
 }
 
 const anchor = (input: SequenceInput): Anchor => {
     const first = input.selection[0];
     if (first) {
-        const { year, month, day } = parseKey(first);
-        return { year, month, day };
+        const { year, month, day, hour } = parseKey(first);
+        return { year, month, day, hour };
     }
-    if (input.view.year !== null) return { year: input.view.year, month: input.view.month, day: input.view.day };
-    const latest = input.catalog.latest('day');
-    if (!latest) return { year: null, month: null, day: null };
-    const { year, month, day } = parseKey(latest);
-    return { year, month, day };
+    const { view } = input;
+    if (view.year !== null) return { year: view.year, month: view.month, day: view.day, hour: view.hour };
+    const latest = input.catalog.latest('hour');
+    if (!latest) return { year: null, month: null, day: null, hour: null };
+    const { year, month, day, hour } = parseKey(latest);
+    return { year, month, day, hour };
 };
 
 const ofGranularity = (selection: readonly string[], granularity: Granularity): string[] =>
@@ -46,7 +48,7 @@ const build = (input: SequenceInput, mode: Mode): Sequence => {
         const keys = chosen.length >= 2 ? chosen : catalog.years().map(year => toKey(year));
         return { mode, keys, truncated: false };
     }
-    const { year, month, day } = anchor(input);
+    const { year, month, day, hour } = anchor(input);
     if (year === null) return EMPTY;
     if (mode === 'month') {
         const chosen = ofGranularity(input.selection, 'month');
@@ -60,12 +62,19 @@ const build = (input: SequenceInput, mode: Mode): Sequence => {
         return { mode, keys, truncated: false };
     }
     if (day === null) return EMPTY;
-    const chosen = ofGranularity(input.selection, 'hour');
-    const keys = chosen.length >= 2 ? chosen : catalog.hours(year, month, day).map(item => toKey(year, month, day, item));
+    if (mode === 'hour') {
+        const chosen = ofGranularity(input.selection, 'hour');
+        const keys = chosen.length >= 2 ? chosen : catalog.hours(year, month, day).map(item => toKey(year, month, day, item));
+        return { mode, keys, truncated: false };
+    }
+    if (hour === null) return EMPTY;
+    const chosen = ofGranularity(input.selection, 'minute');
+    const keys = chosen.length >= 2 ? chosen : catalog.minutes(year, month, day, hour).map(item => toKey(year, month, day, hour, item));
     return { mode, keys, truncated: false };
 };
 
 const CANDIDATES: Record<Granularity | 'none', Mode[]> = {
+    minute: ['minute', 'hour', 'day', 'month', 'year', 'timeline'],
     hour: ['hour', 'day', 'month', 'year', 'timeline'],
     day: ['day', 'month', 'year', 'timeline'],
     month: ['month', 'year', 'timeline'],
@@ -78,6 +87,7 @@ const VIEW_CANDIDATES: Record<View['level'], Mode[]> = {
     months: ['month', 'year', 'timeline'],
     days: ['day', 'month', 'year', 'timeline'],
     hours: ['hour', 'day', 'month', 'year', 'timeline'],
+    minutes: ['minute', 'hour', 'day', 'month', 'year', 'timeline'],
 };
 
 export const buildSequence = (input: SequenceInput): Sequence => {

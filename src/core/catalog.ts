@@ -1,6 +1,6 @@
 import { formatInstant, parseInstant, parseTimeDimension, type Instant, type ParseOptions } from './iso.js';
 import {
-    DAY_MS, HOUR_MS, civil, dayNumber, endAt, firstDay, isKey, keyOfAt, lastDay, shiftKey, sortKeys, startAt, toKey,
+    DAY_MS, HOUR_MS, MINUTE_MS, civil, dayNumber, endAt, firstDay, isKey, keyOfAt, lastDay, shiftKey, sortKeys, startAt, toKey,
 } from './keys.js';
 import type { Granularity, TimeDimension, TimeRange } from './types.js';
 
@@ -12,6 +12,7 @@ export interface Catalog {
     months(year: number): number[];
     days(year: number, month: number): number[];
     hours(year: number, month: number, day: number): number[];
+    minutes(year: number, month: number, day: number, hour: number): number[];
     has(key: string): boolean;
     isAvailable(iso: string): boolean;
     keys(granularity: Granularity, limit?: number): { keys: string[]; truncated: boolean };
@@ -71,6 +72,7 @@ export const createCatalog = (input: CatalogInput, options: ParseOptions = {}): 
 
     const tree = new Map<number, Map<number, Set<number>>>();
     const hoursByDay = new Map<number, Set<number>>();
+    const minutesByHour = new Map<number, Set<number>>();
     for (const entry of entries) {
         const [year, month, day] = civil(entry.day);
         const months = tree.get(year) ?? new Map<number, Set<number>>();
@@ -82,6 +84,10 @@ export const createCatalog = (input: CatalogInput, options: ParseOptions = {}): 
         const hours = hoursByDay.get(entry.day) ?? new Set<number>();
         hoursByDay.set(entry.day, hours);
         hours.add(Math.floor(entry.ms / HOUR_MS));
+        const hourAt = entry.day * 24 + Math.floor(entry.ms / HOUR_MS);
+        const minutes = minutesByHour.get(hourAt) ?? new Set<number>();
+        minutesByHour.set(hourAt, minutes);
+        minutes.add(Math.floor((entry.ms % HOUR_MS) / MINUTE_MS));
     }
 
     const overlapping = (from: number, to: number): Span[] => spans.filter(span => span.start.day <= to && span.end.day >= from);
@@ -153,6 +159,18 @@ export const createCatalog = (input: CatalogInput, options: ParseOptions = {}): 
             }
             return sorted(hours);
         },
+        minutes(year, month, day, hour) {
+            const number = dayNumber(year, month, day);
+            const from = number * DAY_MS + hour * HOUR_MS;
+            const minutes: number[] = [...(minutesByHour.get(number * 24 + hour) ?? [])];
+            for (const span of overlappingAt(from, from + HOUR_MS)) {
+                if (!span.start.shape.time) continue;
+                const first = Math.max(0, Math.floor((span.start.at - from) / MINUTE_MS));
+                const last = Math.min(59, Math.floor((span.end.at - from) / MINUTE_MS));
+                minutes.push(...range(first, last));
+            }
+            return sorted(minutes);
+        },
         has,
         isAvailable(iso) {
             if (isKey(iso)) return has(iso);
@@ -160,7 +178,7 @@ export const createCatalog = (input: CatalogInput, options: ParseOptions = {}): 
             return instant !== null && has(keyOfAt(instant.at, 'day'));
         },
         keys(granularity, limit = 10_000) {
-            const timed = granularity !== 'hour';
+            const timed = granularity !== 'hour' && granularity !== 'minute';
             const keys = new Set(entries.filter(entry => timed || entry.shape.time).map(entry => keyOfAt(entry.at, granularity)));
             let truncated = false;
             for (const span of spans) {

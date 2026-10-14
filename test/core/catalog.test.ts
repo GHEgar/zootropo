@@ -7,7 +7,7 @@ const STORMS = [
     '1990-07-22T06:00:00.000Z', '1990-07-22T12:00:00.000Z', '1990-07-23T00:00:00.000Z',
     '1990-08-01T00:00:00.000Z', '1991-01-10T00:00:00.000Z',
 ];
-const YEARS: View = { level: 'years', year: null, month: null, day: null };
+const YEARS: View = { level: 'years', year: null, month: null, day: null, hour: null };
 
 describe('createCatalog', () => {
     it('builds the year, month and day tree from a dimension string', () => {
@@ -143,5 +143,32 @@ describe('hours', () => {
         expect(timeValue(catalog, ['1990-07-22T12'])).toBe('1990-07-22T12:00:00.000Z');
         expect(cqlValue('t', ['1990-07-22T06', '1990-07-22T07'])).toBe("t >= '1990-07-22T06:00:00Z' AND t < '1990-07-22T08:00:00Z'");
         expect(cqlValue('t', ['1990-07-22T23', '1990-07-23'])).toBe("t >= '1990-07-22T23:00:00Z' AND t < '1990-07-24'");
+    });
+});
+
+describe('minutes', () => {
+    const radar = createCatalog('2024-06-01T10:00:00Z/2024-06-01T11:00:00Z/PT5M');
+
+    it('opens hours into minutes for radar-like catalogs', () => {
+        expect(radar.instants).toHaveLength(13);
+        expect(radar.hours(2024, 6, 1)).toEqual([10, 11]);
+        expect(radar.minutes(2024, 6, 1, 10)).toEqual([0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55]);
+        expect(radar.minutes(2024, 6, 1, 11)).toEqual([0]);
+        expect(radar.keys('minute').keys.slice(0, 3)).toEqual(['2024-06-01T10:00', '2024-06-01T10:05', '2024-06-01T10:10']);
+    });
+
+    it('steps, values and cql by minute', () => {
+        const sequence = buildSequence({ catalog: radar, view: YEARS, granularity: 'month', selection: ['2024-06-01T10:20'], mode: 'auto' });
+        expect(sequence).toMatchObject({ mode: 'minute' });
+        expect(sequence.keys).toHaveLength(12);
+        expect(timeValue(radar, ['2024-06-01T10:20'])).toBe('2024-06-01T10:20:00Z');
+        expect(timeValue(radar, ['2024-06-01T10'])).toBe('2024-06-01T10:00:00Z/2024-06-01T10:55:00Z');
+        expect(cqlValue('t', ['2024-06-01T10:20', '2024-06-01T10:21'])).toBe("t >= '2024-06-01T10:20:00Z' AND t < '2024-06-01T10:22:00Z'");
+    });
+
+    it('answers minutes inside continuous ranges', () => {
+        const continuous = createCatalog('2024-06-01T10:58:00Z/2024-06-01T11:02:00Z');
+        expect(continuous.minutes(2024, 6, 1, 10)).toEqual([58, 59]);
+        expect(continuous.minutes(2024, 6, 1, 11)).toEqual([0, 1, 2]);
     });
 });

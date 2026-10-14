@@ -1,6 +1,6 @@
-export type Granularity = 'year' | 'month' | 'day' | 'hour';
+export type Granularity = 'year' | 'month' | 'day' | 'hour' | 'minute';
 
-export type Mode = 'year' | 'month' | 'day' | 'hour' | 'timeline';
+export type Mode = 'year' | 'month' | 'day' | 'hour' | 'minute' | 'timeline';
 
 export type RequestedMode = Mode | 'auto';
 
@@ -12,7 +12,7 @@ export type SelectMode = 'replace' | 'toggle';
 
 export type Multiple = boolean | 'mixed';
 
-export type Level = 'years' | 'months' | 'days' | 'hours';
+export type Level = 'years' | 'months' | 'days' | 'hours' | 'minutes';
 
 export interface TimeRange {
     start: string;
@@ -29,6 +29,7 @@ export interface View {
     year: number | null;
     month: number | null;
     day: number | null;
+    hour: number | null;
 }
 
 export interface Sequence {
@@ -44,6 +45,7 @@ export interface Item {
     month: number | null;
     day: number | null;
     hour: number | null;
+    minute: number | null;
     selected: boolean;
     partial: boolean;
     current: boolean;
