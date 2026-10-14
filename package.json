@@ -1,6 +1,6 @@
 {
     "name": "zootropo",
-    "version": "0.3.0",
+    "version": "0.4.0",
     "description": "Headless time player for WMS layers: TIME and CQL dates, selection, playback and synced comparison.",
     "license": "AGPL-3.0-only",
     "author": "Edgar Villarreal",

@@ -5,6 +5,8 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y 
 
 ## [No publicado]
 
+## [0.4.0] - 2026-10-14
+
 ### Agregado
 
 - `inspectLayer(url, capa)` en `zootropo/ol`: revisa la dimensión `TIME` en `GetCapabilities` y las
