@@ -16,6 +16,62 @@ npm install zootropo
 | `zootropo/react` | `useTimePlayer` and `usePlayerGroup` with prop getters | `react >= 19` |
 | `zootropo/ol` | `bindWmsTime` and `GetCapabilities` dimension reader | `ol >= 10` |
 
+## Preparing your layers
+
+zootropo needs two things from a layer: the list of dates it has (the catalog) and a way to ask the
+server for one of them. There are two ways to get both.
+
+### Path A: a `TIME` dimension
+
+Best for rasters (image mosaics, NetCDF) and for vectors when you control GeoServer.
+
+1. In GeoServer, open the layer → **Dimensions** → enable **Time**. For a vector layer pick the date
+   attribute; for a mosaic, the time attribute of its index.
+2. Any presentation works: **List** gives exact instants; **Interval and resolution** is expanded to
+   instants; **Continuous interval** becomes a range and steps use the granularity you ask for.
+3. Values must be ISO 8601 (`2025-03-01`, `2025-03-01T06:00:00Z`).
+4. Check it:
+
+   ```bash
+   curl -s 'https://example.org/geoserver/ws/wms?SERVICE=WMS&REQUEST=GetCapabilities&VERSION=1.3.0' \
+     | grep -A1 '<Dimension name="time"'
+   ```
+
+   or in code, `await fetchDimension(url, 'ws:layer')` must return `values`.
+5. Create the player with `kind: 'time'` and `catalog: dimension.values`; `bindWmsTime` writes `TIME`.
+6. Some servers accept a single instant per request (NASA GIBS, many raster services): use
+   `multiple: false`. GeoServer accepts lists and ranges, but how several instants are drawn depends on
+   the layer.
+
+### Path B: a date column and `CQL_FILTER`
+
+For vector layers in GeoServer without a time dimension.
+
+1. The layer needs a `date` or `timestamp` attribute. Pass its name as `column`.
+2. `CQL_FILTER` is a GeoServer vendor parameter; MapServer and QGIS Server do not support it.
+3. You build the catalog, because WMS does not list the values of a column. Any list of ISO dates
+   works, for example from your backend:
+
+   ```sql
+   SELECT DISTINCT fecha::date FROM ws.layer WHERE fecha IS NOT NULL ORDER BY 1;
+   ```
+
+4. Create the player with `kind: 'cql'`, `column` and that list as `catalog`; `bindWmsTime` writes
+   `CQL_FILTER` (and `baseCql`, if the layer already has a filter of yours).
+5. If the same layer also has a time dimension enabled, GeoServer applies its default time to every
+   request without `TIME` and the CQL comes back empty: pass `cqlTime: 'catalog'` to `bindWmsTime`.
+
+### Checklist
+
+| Question | Path A (`TIME`) | Path B (CQL) |
+|---|---|---|
+| Where do the dates come from? | `GetCapabilities` → `fetchDimension` | Your list (backend, file, query) |
+| What does zootropo send? | `TIME=…` | `CQL_FILTER=column >= '…' AND column < '…'` |
+| Server | Any WMS with a time dimension | GeoServer |
+| Finest level | Whatever the instants carry, down to hours | Day, or hour with timestamps |
+| Selecting several dates | Only if the server accepts lists (`multiple`) | Always |
+| Typical trap | Service that takes one instant: `multiple: false` | Layer that also has `TIME` on: `cqlTime` |
+
 ## Core
 
 ```ts
