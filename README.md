@@ -297,6 +297,9 @@ The front layer shows the current step while the back one, at opacity 0, loads t
 player reaches it, they swap, and the player only waits if the next step was not loaded yet. With the
 NDVI layers of the demo the time spent waiting for tiles went from about 65 % to 15 %.
 
+To record the animation as MP4, WebM or GIF, [cartela](https://github.com/GHEgar/cartela) holds the view
+with `planHold` and moves the player in `beforeFrame`; its README has the recipe.
+
 ## Known limitations
 
 - A GeoServer layer with a `TIME` dimension applies its default time when the request has no `TIME`,
