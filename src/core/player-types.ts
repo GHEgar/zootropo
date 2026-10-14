@@ -76,4 +76,5 @@ export interface TimePlayer {
     setBaseCql(cql: string | null): void;
     loading(): void;
     ready(): void;
+    valueOf(keys: readonly string[]): string | null;
 }

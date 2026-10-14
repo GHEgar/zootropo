@@ -2,11 +2,10 @@ import { listen, unlistenByKey, type EventsKey } from 'ol/events.js';
 import type ImageWMS from 'ol/source/ImageWMS.js';
 import type TileWMS from 'ol/source/TileWMS.js';
 import type { TimePlayer } from '../core/index.js';
+import { paramsFor, paramsKey, type WmsParamOptions } from './params.js';
 
-export interface WmsTimeOptions {
-    param?: string;
+export interface WmsTimeOptions extends WmsParamOptions {
     settleMs?: number;
-    cqlTime?: 'catalog' | string | null;
 }
 
 export interface WmsTimeBinding {
@@ -19,9 +18,7 @@ const STARTS = ['tileloadstart', 'imageloadstart'];
 const ENDS = ['tileloadend', 'tileloaderror', 'imageloadend', 'imageloaderror'];
 
 export const bindWmsTime = (player: TimePlayer, source: ImageWMS | TileWMS, options: WmsTimeOptions = {}): WmsTimeBinding => {
-    const param = options.param ?? (player.kind === 'time' ? 'TIME' : 'CQL_FILTER');
     const settleMs = options.settleMs ?? 150;
-    const cqlTime = player.kind === 'cql' ? options.cqlTime ?? null : null;
     let pending = 0;
     let waiting = false;
     let last: string | undefined;
@@ -49,22 +46,13 @@ export const bindWmsTime = (player: TimePlayer, source: ImageWMS | TileWMS, opti
         })),
     ];
 
-    const wideTime = (): string | undefined => {
-        if (cqlTime !== 'catalog') return cqlTime ?? undefined;
-        const extent = player.getSnapshot().catalog.extent();
-        return extent ? `${extent.start}/${extent.end}` : undefined;
-    };
-
     const apply = (force = false): void => {
-        const value = player.getSnapshot().value;
-        const time = cqlTime === null ? undefined : wideTime();
-        const key = `${value ?? ''}|${time ?? ''}`;
+        const params = paramsFor(player, player.getSnapshot().value, options);
+        const key = paramsKey(params);
         if (!force && key === last) return;
         last = key;
         waiting = true;
         player.loading();
-        const params: Record<string, string | undefined> = { [param]: value ?? undefined };
-        if (cqlTime !== null) params.TIME = time;
         source.updateParams(params);
         clearSettle();
         settle = setTimeout(() => {

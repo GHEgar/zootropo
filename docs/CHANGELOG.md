@@ -5,6 +5,16 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y 
 
 ## [No publicado]
 
+## [0.7.0] - 2026-10-14
+
+### Agregado
+
+- `bindWmsBuffer(player, front, back)` en `zootropo/ol`: dos capas WMS iguales, la de adelante muestra
+  el paso actual y la de atrás, con opacidad 0, carga el siguiente; al llegar se intercambian. En el
+  demo, el tiempo esperando mosaicos bajó de ~65 % a ~15 %.
+- `player.valueOf(keys)`: el valor (`TIME` o CQL) de cualquier conjunto de llaves.
+- `paramsFor` en `zootropo/ol`, compartido por `bindWmsTime` y `bindWmsBuffer`.
+
 ## [0.6.0] - 2026-10-14
 
 ### Agregado

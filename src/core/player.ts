@@ -255,6 +255,10 @@ export const createTimePlayer = (options: PlayerOptions = {}): TimePlayer => {
         loading() {
             if (!state.loading) set({ loading: true });
         },
+        valueOf(keys) {
+            if (kind === 'time') return timeValue(state.catalog, keys, { compact: options.compact ?? true });
+            return and([state.baseCql, cqlValue(column, keys)]);
+        },
         ready() {
             if (state.loading) set({ loading: false });
             clock.poke();

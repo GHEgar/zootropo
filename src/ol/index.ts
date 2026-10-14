@@ -8,3 +8,7 @@ export { watchDimension } from './watch.js';
 export type { DimensionWatch, WatchOptions } from './watch.js';
 export { fetchColumnDates, serviceUrlOf, uniqueRequest } from './columns.js';
 export type { ColumnDates, ColumnDatesOptions } from './columns.js';
+export { bindWmsBuffer } from './buffer.js';
+export type { WmsBuffer, WmsBufferOptions, WmsLayer } from './buffer.js';
+export { paramsFor } from './params.js';
+export type { WmsParamOptions, WmsParams } from './params.js';

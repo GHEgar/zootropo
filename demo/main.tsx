@@ -90,8 +90,8 @@ function App() {
                 {error && <span className="badge warn">{error}</span>}
             </header>
             <div className="maps">
-                <MapPanel view={view} url={GIBS} layer={TERRA} player={terra} title="A · Terra" />
-                <MapPanel view={view} url={GIBS} layer={AQUA} player={aqua} title="B · Aqua" />
+                <MapPanel view={view} url={GIBS} layer={TERRA} player={terra} title="A · Terra" buffered />
+                <MapPanel view={view} url={GIBS} layer={AQUA} player={aqua} title="B · Aqua" buffered />
                 <MapPanel
                     view={view}
                     url={GEOSERVER}

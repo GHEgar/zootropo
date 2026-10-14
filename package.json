@@ -1,6 +1,6 @@
 {
     "name": "zootropo",
-    "version": "0.6.0",
+    "version": "0.7.0",
     "description": "Headless time player for WMS layers: TIME and CQL dates, selection, playback and synced comparison.",
     "keywords": [
         "wms",
