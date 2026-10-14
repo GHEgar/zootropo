@@ -25,8 +25,8 @@ function GroupControls({ group }: { group: PlayerGroup }) {
     const g = usePlayerGroup(group, { labels: LABELS });
     return (
         <div className="group">
-            <strong>Reloj compartido</strong>
-            <span className="muted">{g.step ?? '—'} · {g.sequence.length} pasos{g.loading ? ' · esperando capas' : ''}</span>
+            <strong>Shared clock</strong>
+            <span className="muted">{g.step ?? '—'} · {g.sequence.length} steps{g.loading ? ' · waiting for layers' : ''}</span>
             <Transport transport={g} playing={g.playing} intervalMs={g.intervalMs} direction={g.direction} />
         </div>
     );
@@ -80,13 +80,13 @@ function App() {
     }, [stormKind, stormDates]);
 
     useEffect(() => loadInto(storms, stormKind === 'time' ? stormTimes : stormDates), [storms, stormKind, stormTimes, stormDates]);
-    useUrlSync(terra, { param: 'fecha' });
+    useUrlSync(terra, { param: 'date' });
 
     return (
         <div className="layout">
             <header className="head">
                 <strong>zootropo</strong>
-                <span className="muted">NDVI mensual de MODIS (GIBS) y tormentas del Atlántico (GeoServer)</span>
+                <span className="muted">Monthly MODIS NDVI (GIBS) and Atlantic storms (GeoServer)</span>
                 {error && <span className="badge warn">{error}</span>}
             </header>
             <div className="maps">
@@ -98,24 +98,24 @@ function App() {
                     layer={stormKind === 'time' ? STORMS_TIME : STORMS_CQL}
                     player={storms}
                     cqlTime={stormKind === 'cql' ? 'catalog' : undefined}
-                    title={`Tormentas · ${stormKind === 'time' ? 'TIME' : 'CQL'}`}
+                    title={`Storms · ${stormKind === 'time' ? 'TIME' : 'CQL'}`}
                 />
             </div>
             <aside className="panel">
                 <Inspector />
                 <label className="sync">
                     <input type="checkbox" checked={sync} onChange={event => setSync(event.target.checked)} />
-                    Sincronizar A y B
+                    Sync A and B
                 </label>
                 {group && <GroupControls group={group} />}
                 <Selector player={terra} title="A · Terra" />
                 <Selector player={aqua} title="B · Aqua" />
                 <div className="kind">
-                    Tormentas por{' '}
+                    Storms by{' '}
                     <button type="button" aria-pressed={stormKind === 'time'} onClick={() => setStormKind('time')}>TIME</button>
                     <button type="button" aria-pressed={stormKind === 'cql'} onClick={() => setStormKind('cql')}>CQL</button>
                 </div>
-                <Selector key={stormKind} player={storms} title="Tormentas" />
+                <Selector key={stormKind} player={storms} title="Storms" />
             </aside>
         </div>
     );

@@ -4,7 +4,7 @@ import { Transport } from './Transport';
 
 const MODES: RequestedMode[] = ['auto', 'year', 'month', 'day', 'hour', 'minute', 'timeline'];
 const MODE_LABELS: Record<RequestedMode, string> = {
-    auto: 'Auto', year: 'Años', month: 'Meses', day: 'Días', hour: 'Horas', minute: 'Minutos', timeline: 'Línea de tiempo',
+    auto: 'Auto', year: 'Years', month: 'Months', day: 'Days', hour: 'Hours', minute: 'Minutes', timeline: 'Timeline',
 };
 
 const itemLabel = (item: Item): string => {
@@ -24,16 +24,16 @@ export function Selector({ player, title }: Props) {
     const t = useTimePlayer(player, { labels: LABELS });
     const { view } = t;
     const where = view.level === 'years' || view.year === null
-        ? 'Años'
+        ? 'Years'
         : view.level === 'months' ? String(view.year) : formatter.key(toKey(view.year, view.month, view.level === 'days' ? null : view.day, view.level === 'minutes' ? view.hour : null));
 
     return (
         <section className="selector" data-stale={t.stale || undefined}>
             <header>
                 <strong>{title}</strong>
-                <span className="muted">{t.catalog.empty ? 'cargando fechas…' : formatter.keys(t.keys) || 'sin fecha'}</span>
-                {t.loading && <span className="badge">cargando</span>}
-                {t.stale && <span className="badge warn">sin esa fecha</span>}
+                <span className="muted">{t.catalog.empty ? 'loading dates…' : formatter.keys(t.keys) || 'no date'}</span>
+                {t.loading && <span className="badge">loading</span>}
+                {t.stale && <span className="badge warn">date not available</span>}
             </header>
             <nav className="crumbs">
                 <button {...t.getBackProps()}>‹</button>
@@ -47,24 +47,24 @@ export function Selector({ player, title }: Props) {
             {!t.grouped && <Transport transport={t} playing={t.playing} intervalMs={t.intervalMs} direction={t.direction} />}
             <div className="options">
                 <label>
-                    Secuencia{' '}
+                    Sequence{' '}
                     <select value={t.mode} onChange={event => player.setMode(event.target.value as RequestedMode)}>
                         {MODES.map(mode => <option key={mode} value={mode}>{MODE_LABELS[mode]}</option>)}
                     </select>
                 </label>
                 {t.sequence.mode === 'timeline' && (
                     <label>
-                        Paso{' '}
+                        Step{' '}
                         <select value={t.granularity} onChange={event => player.setGranularity(event.target.value as Granularity)}>
-                            <option value="year">año</option>
-                            <option value="month">mes</option>
-                            <option value="day">día</option>
-                            <option value="hour">hora</option>
-                            <option value="minute">minuto</option>
+                            <option value="year">year</option>
+                            <option value="month">month</option>
+                            <option value="day">day</option>
+                            <option value="hour">hour</option>
+                            <option value="minute">minute</option>
                         </select>
                     </label>
                 )}
-                <span className="muted">{t.sequence.keys.length} pasos</span>
+                <span className="muted">{t.sequence.keys.length} steps</span>
             </div>
             <code className="value" data-testid={`value-${title}`}>{t.value ?? '—'}</code>
         </section>

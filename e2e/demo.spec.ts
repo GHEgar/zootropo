@@ -63,7 +63,7 @@ test('the shared clock walks the union and flags the member without that date', 
     await mock(page);
     await page.goto('/');
     await expect(value(page, 1)).toHaveText('2024-05-01');
-    const next = page.locator('.group button[aria-label="Paso siguiente"]');
+    const next = page.locator('.group button[aria-label="Next step"]');
     await next.click();
     await next.click();
     await next.click();
@@ -96,7 +96,7 @@ test('drills down to hours and selects one', async ({ page }) => {
     await expect(storms.locator('.items')).toHaveAttribute('data-level', 'hours');
     await storms.locator('[data-key="1990-07-22T12"]').click();
     await expect(value(page, 2)).toHaveText('1990-07-22T12:00:00.000Z');
-    await storms.locator('button[aria-label="Regresar"]').click();
+    await storms.locator('button[aria-label="Back"]').click();
     await expect(storms.locator('[data-key="1990-07-22"]')).toHaveAttribute('data-partial', 'true');
 });
 
@@ -112,9 +112,9 @@ test('the inspector tells which path a layer can use', async ({ page }) => {
         await route.fulfill({ contentType: 'application/json', body: JSON.stringify({ features: [{ properties: { obs_dateti: first ? '1990-07-22T06:00:00Z' : '2008-11-14T06:00:00Z' } }] }) });
     });
     await page.goto('/');
-    await page.getByText('¿Mi capa es compatible?').click();
-    await page.getByLabel('Capa').fill('geosolutions:storm_obs_test');
-    await page.getByRole('button', { name: 'Revisar' }).click();
+    await page.getByText('Is my layer supported?').click();
+    await page.getByLabel('Layer').fill('geosolutions:storm_obs_test');
+    await page.getByRole('button', { name: 'Check' }).click();
     const report = page.getByTestId('inspect-report');
     await expect(report).toHaveAttribute('data-path', 'both');
     await expect(report).toContainText('obs_dateti');
@@ -123,9 +123,9 @@ test('the inspector tells which path a layer can use', async ({ page }) => {
 
 test('the selection lives in the URL', async ({ page }) => {
     await mock(page);
-    await page.goto('/?fecha=2024-02');
+    await page.goto('/?date=2024-02');
     await expect(value(page, 0)).toHaveText('2024-02-01');
     await selector(page, 0).locator('[data-key="2024-03"]').click();
     await expect(value(page, 0)).toHaveText('2024-03-01');
-    await expect.poll(() => new URL(page.url()).searchParams.get('fecha')).toBe('2024-03');
+    await expect.poll(() => new URL(page.url()).searchParams.get('date')).toBe('2024-03');
 });
