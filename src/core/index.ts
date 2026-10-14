@@ -23,3 +23,5 @@ export {
     nextPreset,
 } from './transport.js';
 export type * from './types.js';
+export { fromParam, syncUrl, toParam } from './url.js';
+export type { UrlSync, UrlSyncOptions } from './url.js';

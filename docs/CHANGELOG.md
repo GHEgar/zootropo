@@ -5,6 +5,22 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y 
 
 ## [No publicado]
 
+## [0.6.0] - 2026-10-14
+
+### Agregado
+
+- `fetchColumnDates(url, capa, columna)` en `zootropo/ol`: las fechas distintas de una columna con el
+  proceso WPS `gs:Unique` de GeoServer, con respaldo por WFS y reducción opcional por granularidad. El
+  camino CQL ya no necesita un backend para armar el catálogo.
+- Fechas en la URL: `toParam` y `fromParam` (con rangos `2024-01..2024-06`), `syncUrl` y, en React,
+  `useUrlSync`. Esperan al catálogo antes de aplicar lo que trae la URL.
+- El demo arma el catálogo de las tormentas por CQL con `fetchColumnDates` y guarda la fecha de Terra
+  en `?fecha=`.
+
+### Corregido
+
+- `isKey` valida mes, día, hora y minuto: `2024-13` ya no es una llave.
+
 ## [0.5.0] - 2026-10-14
 
 ### Agregado

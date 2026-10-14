@@ -28,7 +28,7 @@ same entries.
 | Entry | What it is | Needs |
 |---|---|---|
 | `zootropo` | Framework-free core: ISO 8601 parsing, catalog, selection, sequence, player, group | nothing |
-| `zootropo/react` | `useTimePlayer` and `usePlayerGroup` with prop getters | `react >= 19` |
+| `zootropo/react` | `useTimePlayer`, `usePlayerGroup` and `useUrlSync` | `react >= 19` |
 | `zootropo/ol` | `bindWmsTime` and `GetCapabilities` dimension reader | `ol >= 10` |
 
 ## Quick start
@@ -83,12 +83,9 @@ For vector layers in GeoServer without a time dimension.
 
 1. The layer needs a `date` or `timestamp` attribute. Pass its name as `column`.
 2. `CQL_FILTER` is a GeoServer vendor parameter; MapServer and QGIS Server do not support it.
-3. You build the catalog, because WMS does not list the values of a column. Any list of ISO dates
-   works, for example from your backend:
-
-   ```sql
-   SELECT DISTINCT fecha::date FROM ws.layer WHERE fecha IS NOT NULL ORDER BY 1;
-   ```
+3. Get the catalog: WMS does not list the values of a column, but GeoServer's WPS does.
+   `fetchColumnDates(url, 'ws:layer', 'column')` asks `gs:Unique` and falls back to WFS without WPS;
+   `granularity: 'month'` reduces the list. Any list of ISO dates from your backend works too.
 
 4. Create the player with `kind: 'cql'`, `column` and that list as `catalog`; `bindWmsTime` writes
    `CQL_FILTER` (and `baseCql`, if the layer already has a filter of yours).
@@ -99,7 +96,7 @@ For vector layers in GeoServer without a time dimension.
 
 | Question | Path A (`TIME`) | Path B (CQL) |
 |---|---|---|
-| Where do the dates come from? | `GetCapabilities` → `fetchDimension` | Your list (backend, file, query) |
+| Where do the dates come from? | `GetCapabilities` → `fetchDimension` | `fetchColumnDates` (WPS `gs:Unique`) or your list |
 | What does zootropo send? | `TIME=…` | `CQL_FILTER=column >= '…' AND column < '…'` |
 | Server | Any WMS with a time dimension | GeoServer |
 | Finest level | Whatever the instants carry, down to hours | Day, or hour with timestamps |
@@ -218,6 +215,13 @@ group.play();
 One clock, interval and direction for every member. The group walks the union of the members'
 sequences; a member that has no such date keeps its previous step and reports `stale: true`. It
 waits until every member is ready. Play, pause or a manual selection on a member act on the group.
+
+### Dates in the URL
+
+`syncUrl(player, { param: 'date' })` reads the selection from the query string once the catalog
+arrives and writes it back with `history.replaceState` (`push` on request). Runs of three or more
+consecutive keys are compacted: `?date=2024-01..2024-06,2024-09`. `toParam` and `fromParam` do the
+conversion on their own; in React, `useUrlSync(player)`.
 
 ### Labels
 

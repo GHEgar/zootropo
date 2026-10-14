@@ -1,6 +1,7 @@
 export { useTimePlayer } from './useTimePlayer.js';
 export type { ItemProps, ListProps, UseTimePlayer, UseTimePlayerOptions } from './useTimePlayer.js';
 export { usePlayerGroup } from './usePlayerGroup.js';
+export { useUrlSync } from './useUrlSync.js';
 export type { UsePlayerGroup } from './usePlayerGroup.js';
 export { DEFAULT_LABELS, buildTransport } from './transport.js';
 export type {

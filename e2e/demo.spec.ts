@@ -17,8 +17,10 @@ const GIBS = capabilities({
     MODIS_Aqua_L3_NDVI_Monthly: '2024-01-01,2024-02-01,2024-04-01,2024-05-01',
 });
 
+const STORM_DATES = ['1990-07-22T06:00:00.000Z', '1990-07-22T12:00:00.000Z', '1990-07-23T00:00:00.000Z', '1990-08-01T00:00:00.000Z'];
+
 const GEOSERVER = capabilities({
-    'geosolutions:storm_obs_test': '1990-07-22T06:00:00.000Z,1990-07-22T12:00:00.000Z,1990-07-23T00:00:00.000Z,1990-08-01T00:00:00.000Z',
+    'geosolutions:storm_obs_test': STORM_DATES.join(','),
 });
 
 const mock = async (page: Page): Promise<URL[]> => {
@@ -35,6 +37,10 @@ const mock = async (page: Page): Promise<URL[]> => {
     await page.route('**/wms.cgi?**', answer(GIBS));
     await page.route('**/geoserver/wms?**', answer(GEOSERVER));
     await page.route('**/tile.openstreetmap.org/**', route => route.fulfill({ contentType: 'image/png', body: PIXEL }));
+    await page.route('**/geoserver/wps', route => route.fulfill({
+        contentType: 'application/json',
+        body: JSON.stringify({ features: STORM_DATES.map(value => ({ properties: { value } })) }),
+    }));
     return maps;
 };
 
@@ -113,4 +119,13 @@ test('the inspector tells which path a layer can use', async ({ page }) => {
     await expect(report).toHaveAttribute('data-path', 'both');
     await expect(report).toContainText('obs_dateti');
     await expect(report).toContainText("cqlTime: 'catalog'");
+});
+
+test('the selection lives in the URL', async ({ page }) => {
+    await mock(page);
+    await page.goto('/?fecha=2024-02');
+    await expect(value(page, 0)).toHaveText('2024-02-01');
+    await selector(page, 0).locator('[data-key="2024-03"]').click();
+    await expect(value(page, 0)).toHaveText('2024-03-01');
+    await expect.poll(() => new URL(page.url()).searchParams.get('fecha')).toBe('2024-03');
 });

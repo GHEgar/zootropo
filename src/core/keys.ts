@@ -76,7 +76,14 @@ export const parseKey = (key: string): KeyParts => {
     return { year, month, day, hour, minute, granularity };
 };
 
-export const isKey = (key: string): boolean => KEY.test(key);
+export const isKey = (key: string): boolean => {
+    if (!KEY.test(key)) return false;
+    const { year, month, day, hour, minute } = parseKey(key);
+    if (month !== null && (month < 1 || month > 12)) return false;
+    if (day !== null && month !== null && (day < 1 || day > daysInMonth(year, month))) return false;
+    if (hour !== null && hour > 23) return false;
+    return minute === null || minute <= 59;
+};
 
 export const granularityOf = (key: string): Granularity => parseKey(key).granularity;
 

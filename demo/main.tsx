@@ -3,9 +3,9 @@ import { createRoot } from 'react-dom/client';
 import View from 'ol/View.js';
 import { fromLonLat } from 'ol/proj.js';
 import {
-    createPlayerGroup, createTimePlayer, usePlayerGroup, type PlayerGroup, type TimePlayer,
+    createPlayerGroup, createTimePlayer, usePlayerGroup, useUrlSync, type PlayerGroup, type TimePlayer,
 } from 'zootropo/react';
-import { fetchDimensions } from 'zootropo/ol';
+import { fetchColumnDates, fetchDimensions } from 'zootropo/ol';
 import { Inspector } from './Inspector';
 import { MapPanel } from './MapPanel';
 import { Selector } from './Selector';
@@ -37,7 +37,8 @@ function App() {
     const [error, setError] = useState<string | null>(null);
     const [sync, setSync] = useState(true);
     const [stormKind, setStormKind] = useState<StormKind>('time');
-    const [stormValues, setStormValues] = useState<string>();
+    const [stormTimes, setStormTimes] = useState<string>();
+    const [stormDates, setStormDates] = useState<string>();
 
     const terra = useMemo(() => createTimePlayer({ multiple: false }), []);
     const aqua = useMemo(() => createTimePlayer({ multiple: false }), []);
@@ -64,12 +65,22 @@ function App() {
             loadInto(aqua, dimensions.get(AQUA)?.values);
         }).catch(fail);
         fetchDimensions(GEOSERVER, { signal: controller.signal })
-            .then(dimensions => setStormValues(dimensions.get(STORMS_TIME)?.values))
+            .then(dimensions => setStormTimes(dimensions.get(STORMS_TIME)?.values))
             .catch(fail);
         return () => controller.abort();
     }, [terra, aqua]);
 
-    useEffect(() => loadInto(storms, stormValues), [storms, stormValues]);
+    useEffect(() => {
+        if (stormKind !== 'cql' || stormDates) return undefined;
+        const controller = new AbortController();
+        fetchColumnDates(GEOSERVER, STORMS_CQL, STORMS_COLUMN, { signal: controller.signal })
+            .then(result => setStormDates(result.dates.join(',')))
+            .catch(reason => { if (!controller.signal.aborted) setError(String(reason)); });
+        return () => controller.abort();
+    }, [stormKind, stormDates]);
+
+    useEffect(() => loadInto(storms, stormKind === 'time' ? stormTimes : stormDates), [storms, stormKind, stormTimes, stormDates]);
+    useUrlSync(terra, { param: 'fecha' });
 
     return (
         <div className="layout">

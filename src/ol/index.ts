@@ -6,3 +6,5 @@ export { inspectLayer, wfsUrlOf } from './inspect.js';
 export type { DateColumn, InspectNote, InspectOptions, InspectPath, LayerReport, TimeReport } from './inspect.js';
 export { watchDimension } from './watch.js';
 export type { DimensionWatch, WatchOptions } from './watch.js';
+export { fetchColumnDates, serviceUrlOf, uniqueRequest } from './columns.js';
+export type { ColumnDates, ColumnDatesOptions } from './columns.js';
