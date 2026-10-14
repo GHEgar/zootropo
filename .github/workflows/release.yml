@@ -41,9 +41,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
       - name: npm, with trusted publishing
-        run: |
-          npm -v
-          npm view "zootropo@${TAG#v}" version > /dev/null 2>&1 || npm publish --provenance --access public --loglevel verbose
+        run: npm view "zootropo@${TAG#v}" version > /dev/null 2>&1 || npm publish --provenance --access public
 
   github-packages:
     runs-on: ubuntu-latest
