@@ -22,6 +22,9 @@ several layers with one shared clock to compare them.
 npm install zootropo
 ```
 
+Also on [GitHub Packages](https://github.com/GHEgar/zootropo/pkgs/npm/zootropo) as `@ghegar/zootropo`, with the
+same entries.
+
 | Entry | What it is | Needs |
 |---|---|---|
 | `zootropo` | Framework-free core: ISO 8601 parsing, catalog, selection, sequence, player, group | nothing |
