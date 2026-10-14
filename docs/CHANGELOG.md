@@ -5,6 +5,14 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y 
 
 ## [No publicado]
 
+### Agregado
+
+- `inspectLayer(url, capa)` en `zootropo/ol`: revisa la dimensión `TIME` en `GetCapabilities` y las
+  columnas de fecha por WFS (con su primera y última fecha) y dice qué camino sirve (`time`, `cql`,
+  `both`, `none`), con qué opciones crear el reproductor y qué trampas hay (`cqlTime`, tiempo continuo,
+  sin WFS).
+- «¿Mi capa es compatible?» en el demo: el mismo reporte con una URL y un nombre de capa.
+
 ## [0.3.0] - 2026-10-13
 
 ### Agregado

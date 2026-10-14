@@ -201,3 +201,52 @@ button[aria-pressed='true'] {
     gap: 6px;
     align-items: center;
 }
+
+.inspector {
+    padding: 10px;
+    border-radius: 10px;
+    background: #fff;
+    box-shadow: 0 1px 2px rgba(26, 33, 51, 0.12);
+}
+
+.inspector summary {
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.inspector form {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 8px;
+}
+
+.inspector label {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+}
+
+.inspector input {
+    flex: 1;
+    min-width: 0;
+    padding: 3px 6px;
+    border: 1px solid #b9c3d6;
+    border-radius: 6px;
+}
+
+.report {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-top: 8px;
+}
+
+.report p, .report ul {
+    margin: 0;
+}
+
+.report ul {
+    padding-left: 18px;
+    color: #4a5468;
+}

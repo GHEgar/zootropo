@@ -6,6 +6,7 @@ import {
     createPlayerGroup, createTimePlayer, usePlayerGroup, type PlayerGroup, type TimePlayer,
 } from 'zootropo/react';
 import { fetchDimensions } from 'zootropo/ol';
+import { Inspector } from './Inspector';
 import { MapPanel } from './MapPanel';
 import { Selector } from './Selector';
 import { Transport } from './Transport';
@@ -90,6 +91,7 @@ function App() {
                 />
             </div>
             <aside className="panel">
+                <Inspector />
                 <label className="sync">
                     <input type="checkbox" checked={sync} onChange={event => setSync(event.target.checked)} />
                     Sincronizar A y B

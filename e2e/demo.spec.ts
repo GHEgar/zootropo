@@ -93,3 +93,24 @@ test('drills down to hours and selects one', async ({ page }) => {
     await storms.locator('button[aria-label="Regresar"]').click();
     await expect(storms.locator('[data-key="1990-07-22"]')).toHaveAttribute('data-partial', 'true');
 });
+
+test('the inspector tells which path a layer can use', async ({ page }) => {
+    await mock(page);
+    await page.route('**/geoserver/wfs?**', async route => {
+        const url = new URL(route.request().url());
+        if (url.searchParams.get('REQUEST') === 'DescribeFeatureType') {
+            await route.fulfill({ contentType: 'application/json', body: JSON.stringify({ featureTypes: [{ properties: [{ name: 'obs_dateti', localType: 'date-time' }] }] }) });
+            return;
+        }
+        const first = url.searchParams.get('SORTBY')?.endsWith(' A');
+        await route.fulfill({ contentType: 'application/json', body: JSON.stringify({ features: [{ properties: { obs_dateti: first ? '1990-07-22T06:00:00Z' : '2008-11-14T06:00:00Z' } }] }) });
+    });
+    await page.goto('/');
+    await page.getByText('¿Mi capa es compatible?').click();
+    await page.getByLabel('Capa').fill('geosolutions:storm_obs_test');
+    await page.getByRole('button', { name: 'Revisar' }).click();
+    const report = page.getByTestId('inspect-report');
+    await expect(report).toHaveAttribute('data-path', 'both');
+    await expect(report).toContainText('obs_dateti');
+    await expect(report).toContainText("cqlTime: 'catalog'");
+});
