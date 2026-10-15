@@ -1,3 +1,4 @@
+import '@npmegar/rotulo';
 import { StrictMode, useEffect, useMemo, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import View from 'ol/View.js';
