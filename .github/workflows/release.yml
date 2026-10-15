@@ -28,6 +28,7 @@ jobs:
         with:
           node-version: 24
           cache: npm
+          registry-url: https://registry.npmjs.org
       - run: npm install -g npm@^11.5.1
       - run: npm ci
       - run: npm test
@@ -40,7 +41,9 @@ jobs:
         run: gh release view "$TAG" > /dev/null 2>&1 || gh release create "$TAG" --title "zootropo ${TAG#v}" --notes-file notes.md --verify-tag
         env:
           GH_TOKEN: ${{ github.token }}
-      - name: npm, with trusted publishing
+      - name: npm
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: npm view "zootropo@${TAG#v}" version > /dev/null 2>&1 || npm publish --provenance --access public
 
   github-packages:
