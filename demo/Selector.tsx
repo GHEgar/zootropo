@@ -1,3 +1,4 @@
+import { ChevronLeft } from 'tesela/react';
 import { toKey, useTimePlayer, type Granularity, type Item, type RequestedMode, type TimePlayer } from 'zootropo/react';
 import { LABELS, formatter } from './sources';
 import { Transport } from './Transport';
@@ -36,7 +37,7 @@ export function Selector({ player, title }: Props) {
                 {t.stale && <span className="badge warn">date not available</span>}
             </header>
             <nav className="crumbs">
-                <button {...t.getBackProps()}>‹</button>
+                <button {...t.getBackProps()}><ChevronLeft size={14} /></button>
                 <span>{where}</span>
             </nav>
             <ul {...t.getListProps()} className={`items ${view.level}`}>

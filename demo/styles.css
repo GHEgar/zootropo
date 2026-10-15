@@ -183,8 +183,15 @@ button[aria-pressed='true'] {
     flex-wrap: wrap;
 }
 
+.transport button, .crumbs button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 26px;
+}
+
 .transport .play {
-    min-width: 64px;
+    min-width: 44px;
 }
 
 .value {
