@@ -6,7 +6,7 @@
 
 Headless time player for WMS layers: TIME and CQL dates, selection, playback and synced comparison.
 
-![Two MODIS NDVI maps playing January to September on a shared clock](.github/assets/demo.gif)
+![Two MODIS NDVI maps playing month by month on a shared clock](.github/assets/demo.gif)
 
 **[Live demo](https://ghegar.github.io/zootropo/)**
 
