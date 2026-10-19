@@ -16,6 +16,10 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y 
 - `applyParams(plantilla, params)`: reescribe parámetros de una plantilla de teselas sin romper sus
   marcadores.
 - `maplibre-gl >=6` como peer opcional; el mapa y la fuente son tipos estructurales.
+- Opción `composer` (con `fragment`, `'time'` por omisión) en `bindWmsTime` y `bindRasterTime`: el
+  valor CQL se escribe como fragmento con nombre en un compositor compartido (el `CqlComposer` de
+  urdimbre encaja) en lugar de `CQL_FILTER`; el `TIME` sigue en la fuente y `destroy()` quita el
+  fragmento. Tipos `CqlComposerLike` y `ComposerOptions`.
 
 ### Cambiado
 

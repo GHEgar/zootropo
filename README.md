@@ -248,6 +248,15 @@ the new tiles were requested. `bindRasterBuffer(player, map, frontLayerId, backL
 `raster-opacity-transition: { duration: 0 }` turns into a hard cut. The map and the source are
 structural types, so `maplibre-gl` is only a type.
 
+## Working with urdimbre
+
+When several tools filter the same layer, none of them should own `CQL_FILTER`. Pass `composer` (any
+object with `set(name, fragment)`, such as the `CqlComposer` of urdimbre) to `bindWmsTime` or
+`bindRasterTime` and the `cql` value is written there as the `time` fragment (`fragment` renames it)
+instead of into the source; whoever owns the composer applies the composed filter. `TIME`, including `cqlTime`, still goes to the source, and `destroy()` removes the fragment.
+Without `composer` nothing changes. `inspectLayer` and `fetchColumnDates` take `wfsUrl` (and `wpsUrl`)
+when your catalog already knows the endpoint, so nothing is guessed from the WMS URL.
+
 ## Known limitations
 
 - A GeoServer layer with a `TIME` dimension applies its default time when the request has no `TIME`,

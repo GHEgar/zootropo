@@ -1,10 +1,11 @@
 import { listen, unlistenByKey, type EventsKey } from 'ol/events.js';
 import type ImageWMS from 'ol/source/ImageWMS.js';
 import type TileWMS from 'ol/source/TileWMS.js';
+import { routeCql, writeFragment, type ComposerOptions } from '../core/composer.js';
 import type { TimePlayer } from '../core/index.js';
 import { paramsFor, paramsKey, type WmsParamOptions } from './params.js';
 
-export interface WmsTimeOptions extends WmsParamOptions {
+export interface WmsTimeOptions extends WmsParamOptions, ComposerOptions {
     settleMs?: number;
 }
 
@@ -22,6 +23,7 @@ export const bindWmsTime = (player: TimePlayer, source: ImageWMS | TileWMS, opti
     let pending = 0;
     let waiting = false;
     let last: string | undefined;
+    let lastCql: string | null | undefined;
     let settle: ReturnType<typeof setTimeout> | null = null;
 
     const clearSettle = (): void => {
@@ -47,13 +49,17 @@ export const bindWmsTime = (player: TimePlayer, source: ImageWMS | TileWMS, opti
     ];
 
     const apply = (force = false): void => {
-        const params = paramsFor(player, player.getSnapshot().value, options);
+        const { params, cql } = routeCql(paramsFor(player, player.getSnapshot().value, options), options);
         const key = paramsKey(params);
-        if (!force && key === last) return;
+        const paramsChanged = force || key !== last;
+        const cqlChanged = cql !== undefined && (force || cql !== lastCql);
+        if (!paramsChanged && !cqlChanged) return;
         last = key;
+        lastCql = cql;
         waiting = true;
         player.loading();
-        source.updateParams(params);
+        if (paramsChanged && (!options.composer || Object.keys(params).length > 0)) source.updateParams(params);
+        writeFragment(options, cql);
         clearSettle();
         settle = setTimeout(() => {
             settle = null;
@@ -71,6 +77,7 @@ export const bindWmsTime = (player: TimePlayer, source: ImageWMS | TileWMS, opti
             unsubscribe();
             clearSettle();
             keys.forEach(unlistenByKey);
+            if (lastCql !== undefined) writeFragment(options, null);
             if (waiting) player.ready();
             waiting = false;
         },

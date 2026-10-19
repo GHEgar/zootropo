@@ -1,9 +1,10 @@
+import { routeCql, writeFragment, type ComposerOptions } from '../core/composer.js';
 import type { TimePlayer } from '../core/index.js';
 import { paramsFor, type WmsParamOptions } from '../core/params.js';
 import { settle, sourceIdOf, sourceOf, tilesOf, write, type MapLibreMapLike, type Slot } from './source.js';
 import { applyParams } from './template.js';
 
-export interface RasterTimeOptions extends WmsParamOptions {
+export interface RasterTimeOptions extends WmsParamOptions, ComposerOptions {
     template?: string;
 }
 
@@ -17,6 +18,7 @@ export const bindRasterTime = (player: TimePlayer, map: MapLibreMapLike, sourceI
     const slot: Slot = { sourceId, written: null, loading: false, armed: false };
     let base: string | null = options.template ?? null;
     let waiting = false;
+    let lastCql: string | null | undefined;
 
     const finish = (): void => {
         if (!waiting || slot.loading) return;
@@ -25,21 +27,32 @@ export const bindRasterTime = (player: TimePlayer, map: MapLibreMapLike, sourceI
     };
 
     const apply = (force = false): boolean => {
+        const { params, cql } = routeCql(paramsFor(player, player.getSnapshot().value, options), options);
+        const cqlChanged = cql !== undefined && (force || cql !== lastCql);
+        if (cqlChanged) lastCql = cql;
         const source = sourceOf(map, sourceId);
-        if (!source) return false;
-        const current = tilesOf(source);
-        const foreign = current !== null && current !== slot.written;
-        if (foreign && (slot.written !== null || base === null)) base = current;
-        if (base === null) return false;
-        const next = applyParams(base, paramsFor(player, player.getSnapshot().value, options));
-        if (!force && next === current) {
-            slot.written = next;
-            return false;
+        let started = false;
+        if (source) {
+            const current = tilesOf(source);
+            const foreign = current !== null && current !== slot.written;
+            if (foreign && (slot.written !== null || base === null)) base = current;
+            const next = base === null ? null : applyParams(base, params);
+            if (next !== null && (force || next !== current)) {
+                write(slot, source, next);
+                started = true;
+            } else if (next !== null) slot.written = next;
+            if (!started && cqlChanged) {
+                slot.loading = true;
+                slot.armed = false;
+                started = true;
+            }
         }
-        write(slot, source, next);
-        waiting = true;
-        player.loading();
-        return true;
+        if (started) {
+            waiting = true;
+            player.loading();
+        }
+        if (cqlChanged) writeFragment(options, cql);
+        return started;
     };
 
     const onSource = (event: unknown): void => {
@@ -74,6 +87,7 @@ export const bindRasterTime = (player: TimePlayer, map: MapLibreMapLike, sourceI
             map.off('sourcedata', onSource);
             map.off('styledata', onStyle);
             map.off('idle', onIdle);
+            if (lastCql !== undefined) writeFragment(options, null);
             if (waiting) player.ready();
             waiting = false;
         },

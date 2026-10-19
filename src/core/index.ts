@@ -14,6 +14,7 @@ export type { KeyParts } from './keys.js';
 export { applySelect, buildItems, sameGroup } from './selection.js';
 export { buildSequence } from './sequence.js';
 export type { SequenceInput } from './sequence.js';
+export type { ComposerOptions, CqlComposerLike } from './composer.js';
 export { and, cqlValue, quoteIdentifier, timeValue } from './value.js';
 export type { TimeValueOptions } from './value.js';
 export { createFormatter } from './format.js';

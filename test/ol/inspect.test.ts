@@ -83,6 +83,22 @@ describe('inspectLayer', () => {
         expect(report).toMatchObject({ path: 'none', options: null, notes: ['no-wfs', 'no-dates'] });
     });
 
+    it('uses the WFS endpoint the caller passes instead of guessing it', async () => {
+        const seen: string[] = [];
+        const base = fakeFetch({ columns: { 'ws:obs': [{ name: 'fecha', localType: 'date' }] } });
+        const request = ((input: RequestInfo | URL, init?: RequestInit) => {
+            seen.push(String(input));
+            return base(input, init);
+        }) as typeof fetch;
+        const report = await inspectLayer('https://example.org/maps/service', 'ws:obs', {
+            sample: false, wfsUrl: 'https://example.org/features/endpoint', fetch: request,
+        });
+        expect(report.path).toBe('cql');
+        expect(seen.filter(url => url.includes('DescribeFeatureType'))).toEqual([
+            expect.stringMatching(/^https:\/\/example\.org\/features\/endpoint\?/),
+        ]);
+    });
+
     it('derives the WFS endpoint', () => {
         expect(wfsUrlOf('https://x.org/geoserver/ws/wms')).toBe('https://x.org/geoserver/ws/wfs');
         expect(wfsUrlOf('https://x.org/geoserver/wms?map=a')).toBe('https://x.org/geoserver/wfs?map=a');
