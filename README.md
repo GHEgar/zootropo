@@ -30,6 +30,7 @@ same entries.
 | `zootropo` | Framework-free core: ISO 8601 parsing, catalog, selection, sequence, player, group | nothing |
 | `zootropo/react` | `useTimePlayer`, `usePlayerGroup` and `useUrlSync` | `react >= 19` |
 | `zootropo/ol` | `bindWmsTime` and `GetCapabilities` dimension reader | `ol >= 10` |
+| `zootropo/maplibre` | `bindRasterTime` for WMS raster sources | `maplibre-gl >= 6` |
 
 ## Quick start
 
@@ -225,6 +226,27 @@ NDVI layers of the demo the time spent waiting for tiles went from about 65 % to
 
 To record the animation as MP4, WebM or GIF, [cartela](https://github.com/GHEgar/cartela) holds the view
 with `planHold` and moves the player in `beforeFrame`; its README has the recipe.
+
+## MapLibre
+
+```ts
+import { bindRasterTime } from 'zootropo/maplibre';
+
+map.addSource('ndvi', { type: 'raster', tileSize: 256, tiles: [template] });
+map.addLayer({ id: 'ndvi', type: 'raster', source: 'ndvi' });
+
+bindRasterTime(player, map, 'ndvi');
+```
+
+`bindRasterTime(player, map, sourceId)` rewrites the source's tile template with `setTiles`: `TIME` or
+`CQL_FILTER` (and `cqlTime`, as in `bindWmsTime`) go into the query and `{bbox-epsg-3857}` stays as it
+is. The base is the source's current template, or `template` when you already have one built. If
+something else writes a new template to the source, it becomes the base. Loading ends with the source's `sourcedata` events (or `idle`) after
+the new tiles were requested. `bindRasterBuffer(player, map, frontLayerId, backLayerId)` is the
+`bindWmsBuffer` of MapLibre: two raster layers with their own sources, swapped through
+`raster-opacity`; MapLibre animates that swap with the style's transition (300 ms), which
+`raster-opacity-transition: { duration: 0 }` turns into a hard cut. The map and the source are
+structural types, so `maplibre-gl` is only a type.
 
 ## Known limitations
 

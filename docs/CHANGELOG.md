@@ -5,11 +5,25 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y 
 
 ## [No publicado]
 
+### Agregado
+
+- `zootropo/maplibre`: `bindRasterTime(player, map, sourceId)` escribe `TIME` o `CQL_FILTER` (con
+  `cqlTime`) en la plantilla de teselas de una fuente `raster` WMS con `setTiles`, conserva
+  `{bbox-epsg-3857}` y avisa `loading()`/`ready()` con `sourcedata` e `idle`. Acepta una plantilla ya
+  armada (`template`) y adopta la que otro escriba en la fuente.
+- `bindRasterBuffer(player, map, frente, atrás)`: precarga del siguiente cuadro con dos capas `raster`
+  que se alternan por `raster-opacity`, como `bindWmsBuffer`.
+- `applyParams(plantilla, params)`: reescribe parámetros de una plantilla de teselas sin romper sus
+  marcadores.
+- `maplibre-gl >=6` como peer opcional; el mapa y la fuente son tipos estructurales.
+
 ### Cambiado
 
 - El lint usa `@ghegar/eslint-config` (presets `base`, `react` y `ts`) en lugar de una config propia.
 - El demo está en inglés.
 - El demo usa los íconos de tesela.
+- `paramsFor` y el cálculo del siguiente paso del buffer viven en el core, compartidos por `/ol` y
+  `/maplibre`.
 
 ## [0.7.0] - 2026-10-14
 

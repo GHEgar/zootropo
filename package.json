@@ -10,6 +10,7 @@
         "player",
         "headless",
         "openlayers",
+        "maplibre",
         "react",
         "geoserver",
         "cql",
@@ -43,6 +44,10 @@
         "./ol": {
             "types": "./dist/ol/index.d.ts",
             "import": "./dist/ol/index.js"
+        },
+        "./maplibre": {
+            "types": "./dist/maplibre/index.d.ts",
+            "import": "./dist/maplibre/index.js"
         }
     },
     "scripts": {
@@ -56,10 +61,14 @@
         "demo:build": "vite build --config demo/vite.config.ts"
     },
     "peerDependencies": {
+        "maplibre-gl": ">=6",
         "ol": ">=10",
         "react": ">=19"
     },
     "peerDependenciesMeta": {
+        "maplibre-gl": {
+            "optional": true
+        },
         "ol": {
             "optional": true
         },
@@ -78,6 +87,7 @@
         "eslint-plugin-jsx-a11y": "^6.10.2",
         "eslint-plugin-react-hooks": "^7.1.1",
         "happy-dom": "^20.14.5",
+        "maplibre-gl": "^6.13.0",
         "ol": "^10.11.0",
         "react": "^19.3.0",
         "react-dom": "^19.3.0",

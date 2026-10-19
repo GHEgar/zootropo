@@ -23,6 +23,9 @@
             "zootropo/ol": [
                 "./src/ol/index.ts"
             ],
+            "zootropo/maplibre": [
+                "./src/maplibre/index.ts"
+            ],
             "zootropo": [
                 "./src/core/index.ts"
             ]

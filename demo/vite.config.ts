@@ -12,6 +12,7 @@ export default defineConfig({
         alias: [
             { find: /^zootropo\/react$/, replacement: src('react/index.ts') },
             { find: /^zootropo\/ol$/, replacement: src('ol/index.ts') },
+            { find: /^zootropo\/maplibre$/, replacement: src('maplibre/index.ts') },
             { find: /^zootropo$/, replacement: src('core/index.ts') },
         ],
     },

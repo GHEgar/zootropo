@@ -4,7 +4,7 @@ import type TileLayer from 'ol/layer/Tile.js';
 import type ImageWMS from 'ol/source/ImageWMS.js';
 import type TileWMS from 'ol/source/TileWMS.js';
 import type { TimePlayer } from '../core/index.js';
-import { paramsFor, paramsKey, type WmsParamOptions, type WmsParams } from './params.js';
+import { nextStepValue, paramsFor, paramsKey, type WmsParamOptions, type WmsParams } from '../core/params.js';
 
 export type WmsLayer = TileLayer<TileWMS> | ImageLayer<ImageWMS>;
 
@@ -79,18 +79,6 @@ export const bindWmsBuffer = (player: TimePlayer, frontLayer: WmsLayer, backLaye
         }, settleMs);
     };
 
-    const nextValue = (): string | null => {
-        const { sequence, index, step, direction, loop } = player.getSnapshot();
-        const length = sequence.keys.length;
-        if (step === null || length < 2) return null;
-        let target = index + (direction === 'backward' ? -1 : 1);
-        if (target < 0 || target >= length) {
-            if (!loop) return null;
-            target = (target + length) % length;
-        }
-        return player.valueOf([sequence.keys[target] as string]);
-    };
-
     const sync = (): void => {
         const current = paramsFor(player, player.getSnapshot().value, options);
         const currentKey = paramsKey(current);
@@ -108,7 +96,7 @@ export const bindWmsBuffer = (player: TimePlayer, frontLayer: WmsLayer, backLaye
             }
         }
         if (options.preload ?? true) {
-            const next = nextValue();
+            const next = nextStepValue(player);
             if (next !== null) load(back, paramsFor(player, next, options));
         }
     };
