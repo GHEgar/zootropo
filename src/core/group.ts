@@ -37,7 +37,7 @@ export interface PlayerGroup {
     toggle(): void;
     stop(): void;
     step(delta?: number): void;
-    seek(key: string): void;
+    seek(key: string): Promise<boolean>;
     setIntervalMs(ms: number): void;
     setDirection(direction: Direction): void;
     setLoop(loop: boolean): void;
@@ -147,10 +147,12 @@ export const createPlayerGroup = (players: readonly TimePlayer[] = [], options: 
         clock.restart();
     };
 
-    const seek = (key: string): void => {
-        if (!snapshot.sequence.includes(key)) return;
+    const seek = async (key: string): Promise<boolean> => {
+        if (!snapshot.sequence.includes(key)) return false;
         moveTo(key, snapshot.sequence);
         clock.restart();
+        const results = await Promise.all(state.players.map(player => player[MEMBER].settled()));
+        return results.every(Boolean);
     };
 
     const link: GroupLink = {

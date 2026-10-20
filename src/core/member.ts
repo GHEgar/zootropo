@@ -8,7 +8,7 @@ export interface GroupLink {
     toggle(): void;
     stop(): void;
     step(delta: number): void;
-    seek(key: string): void;
+    seek(key: string): Promise<boolean>;
     notify(): void;
 }
 
@@ -18,4 +18,5 @@ export interface Member {
     setPlaying(playing: boolean): void;
     sequence(): Sequence;
     loading(): boolean;
+    settled(): Promise<boolean>;
 }

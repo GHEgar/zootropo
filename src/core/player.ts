@@ -7,6 +7,7 @@ import {
     YEARS, applySelect, buildItems, initialSelection, validView, viewAbove, viewInside, viewShowing,
 } from './selection.js';
 import { buildSequence } from './sequence.js';
+import { createSettler } from './settle.js';
 import { DEFAULT_INTERVAL_MS, DEFAULT_TIMEOUT_MS, clampInterval, nextIndex, normalizeDirection } from './transport.js';
 import type { Direction, Granularity, PlayerEvent, RequestedMode, Sequence, View } from './types.js';
 import { and, cqlValue, timeValue } from './value.js';
@@ -41,6 +42,7 @@ export const createTimePlayer = (options: PlayerOptions = {}): TimePlayer => {
     const catalog = createCatalog(options.catalog ?? []);
     const selection = initialSelection(catalog, options.initial ?? 'none');
     let link: GroupLink | null = null;
+    const settler = createSettler(() => options.timeoutMs ?? DEFAULT_TIMEOUT_MS);
 
     let state: State = {
         catalog, selection, view: selection[0] ? viewShowing(selection[0]) : YEARS,
@@ -178,6 +180,7 @@ export const createTimePlayer = (options: PlayerOptions = {}): TimePlayer => {
         },
         sequence: () => snapshot.sequence,
         loading: () => state.loading,
+        settled: () => settler.wait(state.loading),
     };
 
     return {
@@ -190,6 +193,7 @@ export const createTimePlayer = (options: PlayerOptions = {}): TimePlayer => {
         getSnapshot: () => snapshot,
         destroy() {
             clock.stop();
+            settler.flush(false);
             link = null;
             listeners.clear();
         },
@@ -241,9 +245,10 @@ export const createTimePlayer = (options: PlayerOptions = {}): TimePlayer => {
         },
         seek(key) {
             if (link) return link.seek(key);
-            if (!snapshot.sequence.keys.includes(key)) return;
+            if (!snapshot.sequence.keys.includes(key)) return Promise.resolve(false);
             moveTo(key, snapshot.sequence);
             clock.restart();
+            return settler.wait(state.loading);
         },
         setIntervalMs(ms) {
             set({ intervalMs: clampInterval(ms) });
@@ -263,6 +268,7 @@ export const createTimePlayer = (options: PlayerOptions = {}): TimePlayer => {
             if (state.loading) set({ loading: false });
             clock.poke();
             link?.notify();
+            if (!state.loading) settler.flush(true);
         },
     };
 };

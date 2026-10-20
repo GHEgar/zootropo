@@ -5,7 +5,16 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y 
 
 ## [No publicado]
 
+## [0.8.0] - 2026-10-19
+
 ### Agregado
+
+- `seek(key)` devuelve una promesa que se resuelve en `true` cuando la capa enlazada termina de cargar
+  el paso (o enseguida si nada carga), y en `false` si la clave no está en la secuencia, si vence
+  `timeoutMs` o si el reproductor se destruye. En un grupo espera a todos los miembros; sirve para
+  `beforeFrame` de cartela.
+- `bindRasterTime` repone en `destroy()` la plantilla de teselas que tenía la fuente (o la última que
+  otro escribió), salvo que alguien la haya reescrito después; `restore: false` lo desactiva.
 
 - `zootropo/maplibre`: `bindRasterTime(player, map, sourceId)` escribe `TIME` o `CQL_FILTER` (con
   `cqlTime`) en la plantilla de teselas de una fuente `raster` WMS con `setTiles`, conserva
@@ -28,6 +37,7 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y 
 - El demo usa los íconos de tesela.
 - `paramsFor` y el cálculo del siguiente paso del buffer viven en el core, compartidos por `/ol` y
   `/maplibre`.
+- `seek` de `TimePlayer` y de `PlayerGroup` devuelve `Promise<boolean>` en lugar de `void`.
 
 ## [0.7.0] - 2026-10-14
 

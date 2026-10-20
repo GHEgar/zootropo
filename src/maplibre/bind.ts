@@ -6,6 +6,7 @@ import { applyParams } from './template.js';
 
 export interface RasterTimeOptions extends WmsParamOptions, ComposerOptions {
     template?: string;
+    restore?: boolean;
 }
 
 export interface RasterTimeBinding {
@@ -19,6 +20,7 @@ export const bindRasterTime = (player: TimePlayer, map: MapLibreMapLike, sourceI
     let base: string | null = options.template ?? null;
     let waiting = false;
     let lastCql: string | null | undefined;
+    let original: string[] | null | undefined;
 
     const finish = (): void => {
         if (!waiting || slot.loading) return;
@@ -35,6 +37,7 @@ export const bindRasterTime = (player: TimePlayer, map: MapLibreMapLike, sourceI
         if (source) {
             const current = tilesOf(source);
             const foreign = current !== null && current !== slot.written;
+            if (original === undefined || foreign) original = source.tiles ? [...source.tiles] : null;
             if (foreign && (slot.written !== null || base === null)) base = current;
             const next = base === null ? null : applyParams(base, params);
             if (next !== null && (force || next !== current)) {
@@ -71,6 +74,12 @@ export const bindRasterTime = (player: TimePlayer, map: MapLibreMapLike, sourceI
         apply();
     };
 
+    const restore = (): void => {
+        const source = sourceOf(map, sourceId);
+        if (!(options.restore ?? true) || !source || !original || slot.written === null) return;
+        if (tilesOf(source) === slot.written && slot.written !== original[0]) source.setTiles(original);
+    };
+
     map.on('sourcedata', onSource);
     map.on('styledata', onStyle);
     map.on('idle', onIdle);
@@ -88,6 +97,7 @@ export const bindRasterTime = (player: TimePlayer, map: MapLibreMapLike, sourceI
             map.off('styledata', onStyle);
             map.off('idle', onIdle);
             if (lastCql !== undefined) writeFragment(options, null);
+            restore();
             if (waiting) player.ready();
             waiting = false;
         },

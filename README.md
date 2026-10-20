@@ -133,7 +133,13 @@ player.play();
 ```
 
 Playback changes at any time with `setMode`, `setIntervalMs`, `setDirection`, `setLoop`, `step(delta)`
-and `seek(key)`.
+and `seek(key)`. `seek` returns a promise that resolves to `true` once the bound layer has loaded the
+step (right away when nothing loads), and to `false` when the key is not in the sequence, `timeoutMs`
+passes or the player is destroyed; in a group it waits for every member.
+
+```ts
+await player.seek('2024-03');
+```
 
 ### Catalog
 
@@ -225,7 +231,8 @@ player reaches it, they swap, and the player only waits if the next step was not
 NDVI layers of the demo the time spent waiting for tiles went from about 65 % to 15 %.
 
 To record the animation as MP4, WebM or GIF, [cartela](https://github.com/GHEgar/cartela) holds the view
-with `planHold` and moves the player in `beforeFrame`; its README has the recipe.
+with `planHold` and moves the player in `beforeFrame` (`beforeFrame: (_, index) => player.seek(keys[index])`);
+its README has the recipe.
 
 ## MapLibre
 
@@ -241,7 +248,9 @@ bindRasterTime(player, map, 'ndvi');
 `bindRasterTime(player, map, sourceId)` rewrites the source's tile template with `setTiles`: `TIME` or
 `CQL_FILTER` (and `cqlTime`, as in `bindWmsTime`) go into the query and `{bbox-epsg-3857}` stays as it
 is. The base is the source's current template, or `template` when you already have one built. If
-something else writes a new template to the source, it becomes the base. Loading ends with the source's `sourcedata` events (or `idle`) after
+something else writes a new template to the source, it becomes the base. `destroy()` puts back the
+template the source had (or the last one written by someone else) unless the source was rewritten
+after the last step; `restore: false` leaves the last step on the map. Loading ends with the source's `sourcedata` events (or `idle`) after
 the new tiles were requested. `bindRasterBuffer(player, map, frontLayerId, backLayerId)` is the
 `bindWmsBuffer` of MapLibre: two raster layers with their own sources, swapped through
 `raster-opacity`; MapLibre animates that swap with the style's transition (300 ms), which

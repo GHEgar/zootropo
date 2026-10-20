@@ -69,7 +69,7 @@ export interface TimePlayer {
     toggle(): void;
     stop(): void;
     step(delta?: number): void;
-    seek(key: string): void;
+    seek(key: string): Promise<boolean>;
     setIntervalMs(ms: number): void;
     setDirection(direction: Direction): void;
     setLoop(loop: boolean): void;

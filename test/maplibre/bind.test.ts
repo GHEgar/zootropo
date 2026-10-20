@@ -51,9 +51,10 @@ describe('bindRasterTime', () => {
         const player = createTimePlayer({ catalog: '2024-01-01,2024-06-01', kind: 'cql', column: 'fecha', initial: ['2024'] });
         const map = fakeMap();
         const source = map.addSource('storms');
-        bindRasterTime(player, map, 'storms', { cqlTime: 'catalog' }).destroy();
+        const binding = bindRasterTime(player, map, 'storms', { cqlTime: 'catalog' });
         expect(paramOf(source.tiles?.[0], 'CQL_FILTER')).toBe("fecha >= '2024-01-01' AND fecha < '2025-01-01'");
         expect(paramOf(source.tiles?.[0], 'TIME')).toBe('2024-01-01/2024-06-01');
+        binding.destroy();
     });
 
     it('uses a given template and adopts templates written by others', () => {
@@ -82,6 +83,39 @@ describe('bindRasterTime', () => {
         bindRasterTime(player, map, 'copy');
         expect(again.calls).toHaveLength(0);
         expect(player.getSnapshot().loading).toBe(false);
+    });
+
+    it('restores the original tiles on destroy unless someone else rewrote them', () => {
+        const player = createTimePlayer({ catalog: '2024-01-01,2024-02-01', initial: ['2024-01'] });
+        const map = fakeMap();
+        const original = 'https://x.org/wms?LAYERS=ndvi&TIME=2023-12-01&BBOX={bbox-epsg-3857}';
+        const source = map.addSource('ndvi', [original]);
+        bindRasterTime(player, map, 'ndvi').destroy();
+        expect(source.tiles).toEqual([original]);
+        bindRasterTime(player, map, 'ndvi', { restore: false }).destroy();
+        expect(paramOf(source.tiles?.[0], 'TIME')).toBe('2024-01-01');
+        source.tiles = [original];
+        const binding = bindRasterTime(player, map, 'ndvi');
+        const foreign = 'https://x.org/wms?LAYERS=ndvi&TIME=2024-02-01&BBOX={bbox-epsg-3857}';
+        source.tiles = [foreign];
+        binding.destroy();
+        expect(source.tiles).toEqual([foreign]);
+    });
+
+    it('lets seek resolve when the new tiles are loaded', async () => {
+        const player = createTimePlayer({ catalog: '2024-01-01,2024-02-01', initial: ['2024-01'], mode: 'timeline' });
+        const map = fakeMap();
+        const source = map.addSource('ndvi');
+        bindRasterTime(player, map, 'ndvi');
+        map.content('ndvi', true);
+        let done: boolean | undefined;
+        const seeking = player.seek('2024-02').then(value => { done = value; });
+        expect(paramOf(source.tiles?.[0], 'TIME')).toBe('2024-02-01');
+        await Promise.resolve();
+        expect(done).toBeUndefined();
+        map.content('ndvi', true);
+        await seeking;
+        expect(done).toBe(true);
     });
 
     it('accepts the maplibre-gl map and raster source types', () => {
